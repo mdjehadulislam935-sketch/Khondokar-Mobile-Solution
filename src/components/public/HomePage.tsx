@@ -443,38 +443,40 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* 8. Frequently Asked Questions */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        <div className="text-center space-y-2">
-          <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider">
-            Customer Clarity
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-white">Frequently Asked Questions</h2>
-        </div>
-
-        <div className="space-y-3">
-          {faqs.map((faq, idx) => (
-            <div
-              key={idx}
-              className="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden"
-            >
-              <button
-                onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 text-slate-100 font-medium text-sm hover:text-blue-400 transition-colors"
-              >
-                <span>{faq.q}</span>
-                <ChevronDown
-                  className={`w-4 h-4 text-slate-400 transition-transform ${
-                    openFaq === idx ? 'rotate-180 text-blue-400' : ''
-                  }`}
-                />
-              </button>
-              {openFaq === idx && (
-                <div className="px-4 sm:px-5 pb-5 pt-1 text-xs sm:text-sm text-slate-300 border-t border-slate-800/60 leading-relaxed">
-                  {faq.a}
-                </div>
-              )}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="text-center space-y-2">
+            <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider">
+              Customer Clarity
             </div>
-          ))}
+            <h2 className="text-2xl sm:text-3xl font-bold text-white">Frequently Asked Questions</h2>
+          </div>
+
+          <div className="space-y-3">
+            {faqs.map((faq, idx) => (
+              <div
+                key={idx}
+                className="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden"
+              >
+                <button
+                  onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                  className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 text-slate-100 font-medium text-sm hover:text-blue-400 transition-colors"
+                >
+                  <span>{faq.q}</span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-slate-400 transition-transform ${
+                      openFaq === idx ? 'rotate-180 text-blue-400' : ''
+                    }`}
+                  />
+                </button>
+                {openFaq === idx && (
+                  <div className="px-4 sm:px-5 pb-5 pt-1 text-xs sm:text-sm text-slate-300 border-t border-slate-800/60 leading-relaxed">
+                    {faq.a}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

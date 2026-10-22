@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { RepairBooking } from '../../types';
+import { BUSINESS_INFO } from '../../data/initialData';
 import {
   Wrench,
   CheckCircle2,
@@ -78,7 +79,7 @@ export const RepairBookingPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
       {/* Header */}
       <div className="border-b border-slate-800 pb-6 space-y-2 text-center sm:text-left">
         <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider">
@@ -94,189 +95,248 @@ export const RepairBookingPage: React.FC = () => {
       </div>
 
       {!createdBooking ? (
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Section 1: Device Information */}
-          <div className="p-6 rounded-2xl border border-slate-800 bg-slate-900/60 space-y-5">
-            <div className="flex items-center gap-2 text-white font-bold text-base">
-              <Smartphone className="w-5 h-5 text-blue-400" />
-              <span>1. Device & Problem Details</span>
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Form Column */}
+          <div className="lg:col-span-8">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Section 1: Device Information */}
+              <div className="p-6 rounded-2xl border border-slate-800 bg-slate-900/60 space-y-5">
+                <div className="flex items-center gap-2 text-white font-bold text-base">
+                  <Smartphone className="w-5 h-5 text-blue-400" />
+                  <span>1. Device & Problem Details</span>
+                </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  Device Brand *
-                </label>
-                <select
-                  value={deviceBrand}
-                  onChange={(e) => setDeviceBrand(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                      Device Brand *
+                    </label>
+                    <select
+                      value={deviceBrand}
+                      onChange={(e) => setDeviceBrand(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="Samsung">Samsung</option>
+                      <option value="Apple">Apple / iPhone</option>
+                      <option value="Xiaomi">Xiaomi / Redmi / POCO</option>
+                      <option value="Vivo">Vivo / iQOO</option>
+                      <option value="Oppo">Oppo</option>
+                      <option value="Realme">Realme</option>
+                      <option value="Infinix">Infinix</option>
+                      <option value="Tecno">Tecno</option>
+                      <option value="OnePlus">OnePlus</option>
+                      <option value="Other">Other Brand</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                      Device Model Name / Number *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={deviceModel}
+                      onChange={(e) => setDeviceModel(e.target.value)}
+                      placeholder="e.g. Galaxy A52s, Redmi Note 10 Pro, iPhone 12"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                    Service Required *
+                  </label>
+                  <select
+                    value={serviceId}
+                    onChange={(e) => setServiceId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
+                  >
+                    {services.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.title} (Est. starting ৳{s.startingPrice})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                    Describe the Fault or Symptoms
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={problemDescription}
+                    onChange={(e) => setProblemDescription(e.target.value)}
+                    placeholder="e.g. Screen cracked after falling; touch works partially; device vibrates but display remains blank; phone gets hot near camera..."
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Section 2: Customer Contact Information */}
+              <div className="p-6 rounded-2xl border border-slate-800 bg-slate-900/60 space-y-5">
+                <div className="flex items-center gap-2 text-white font-bold text-base">
+                  <User className="w-5 h-5 text-blue-400" />
+                  <span>2. Customer & Appointment Details</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                      Your Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="e.g. Tanvir Ahmed"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                      Phone Number (Active for SMS / Calls) *
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      placeholder="+8801885181199"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                      Email Address (Optional)
+                    </label>
+                    <input
+                      type="email"
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
+                      placeholder="name@gmail.com"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                      Your Location / Area in Feni
+                    </label>
+                    <input
+                      type="text"
+                      value={customerAddress}
+                      onChange={(e) => setCustomerAddress(e.target.value)}
+                      placeholder="e.g. Amjad Hat, Ful-gazi or Feni Sadar"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                    Preferred Drop-off Date
+                  </label>
+                  <input
+                    type="date"
+                    value={preferredDate}
+                    onChange={(e) => setPreferredDate(e.target.value)}
+                    className="w-full sm:w-64 px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Diagnostic Guarantee Callout */}
+              <div className="p-4 rounded-xl bg-blue-950/30 border border-blue-900/50 flex items-start gap-3 text-xs text-blue-200">
+                <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <span className="font-semibold text-white">Transparent Diagnostic Promise:</span>
+                  <p className="text-slate-300">
+                    Registering a booking does not obligate you to proceed. We test your phone on our DC
+                    power supply and microscope first, quote the exact cost, and only start repair upon
+                    your clear agreement.
+                  </p>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+                <div className="text-xs text-slate-400 text-center sm:text-left">
+                  Drop-off Location: Chairman Market, Amjad Hat, Ful-gazi, Feni
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
                 >
-                  <option value="Samsung">Samsung</option>
-                  <option value="Apple">Apple / iPhone</option>
-                  <option value="Xiaomi">Xiaomi / Redmi / POCO</option>
-                  <option value="Vivo">Vivo / iQOO</option>
-                  <option value="Oppo">Oppo</option>
-                  <option value="Realme">Realme</option>
-                  <option value="Infinix">Infinix</option>
-                  <option value="Tecno">Tecno</option>
-                  <option value="OnePlus">OnePlus</option>
-                  <option value="Other">Other Brand</option>
-                </select>
+                  <Wrench className="w-4 h-4" />
+                  <span>Confirm & Generate Tracking Code</span>
+                </button>
               </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  Device Model Name / Number *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={deviceModel}
-                  onChange={(e) => setDeviceModel(e.target.value)}
-                  placeholder="e.g. Galaxy A52s, Redmi Note 10 Pro, iPhone 12"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                Service Required *
-              </label>
-              <select
-                value={serviceId}
-                onChange={(e) => setServiceId(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
-              >
-                {services.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.title} (Est. starting ৳{s.startingPrice})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                Describe the Fault or Symptoms
-              </label>
-              <textarea
-                rows={3}
-                value={problemDescription}
-                onChange={(e) => setProblemDescription(e.target.value)}
-                placeholder="e.g. Screen cracked after falling; touch works partially; device vibrates but display remains blank; phone gets hot near camera..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
-              />
-            </div>
+            </form>
           </div>
 
-          {/* Section 2: Customer Contact Information */}
-          <div className="p-6 rounded-2xl border border-slate-800 bg-slate-900/60 space-y-5">
-            <div className="flex items-center gap-2 text-white font-bold text-base">
-              <User className="w-5 h-5 text-blue-400" />
-              <span>2. Customer & Appointment Details</span>
-            </div>
+          {/* Right Workshop Info Sidebar */}
+          <div className="lg:col-span-4 space-y-6">
+            <div className="p-6 rounded-2xl border border-slate-800 bg-slate-900/60 space-y-5">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-blue-400" />
+                <span>Workshop Information</span>
+              </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  Your Full Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="e.g. Tanvir Ahmed"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
-                />
+              <div className="space-y-4 text-xs text-slate-300">
+                <div>
+                  <div className="text-slate-400 text-[11px] mb-0.5">Workshop Address:</div>
+                  <div className="text-white font-medium">{BUSINESS_INFO.address}</div>
+                </div>
+
+                <div>
+                  <div className="text-slate-400 text-[11px] mb-0.5">Lead Technician:</div>
+                  <div className="text-white font-medium">{BUSINESS_INFO.proprietor}</div>
+                  <div className="text-blue-400 text-[11px]">{BUSINESS_INFO.title}</div>
+                </div>
+
+                <div>
+                  <div className="text-slate-400 text-[11px] mb-0.5">Direct Helpline / WhatsApp:</div>
+                  <a
+                    href={`tel:${BUSINESS_INFO.phoneRaw}`}
+                    className="text-blue-400 font-mono text-sm font-semibold hover:underline"
+                  >
+                    {BUSINESS_INFO.phone}
+                  </a>
+                </div>
+
+                <div>
+                  <div className="text-slate-400 text-[11px] mb-0.5">Workshop Hours:</div>
+                  <div className="text-slate-200">Sat – Thu: 9:00 AM – 9:00 PM</div>
+                  <div className="text-slate-200">Friday: 2:30 PM – 9:00 PM</div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  Phone Number (Active for SMS / Calls) *
-                </label>
-                <input
-                  type="tel"
-                  required
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  placeholder="+8801885181199"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
-                />
+              <div className="pt-4 border-t border-slate-800/80 space-y-2.5 text-xs">
+                <div className="flex items-center gap-2 text-slate-300">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Fast 45–90 min turnaround on in-stock displays</span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-300">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Strict zero data inspection policy</span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-300">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>30–90 days hardware testing warranty</span>
+                </div>
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  Email Address (Optional)
-                </label>
-                <input
-                  type="email"
-                  value={customerEmail}
-                  onChange={(e) => setCustomerEmail(e.target.value)}
-                  placeholder="name@gmail.com"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  Your Location / Area in Feni
-                </label>
-                <input
-                  type="text"
-                  value={customerAddress}
-                  onChange={(e) => setCustomerAddress(e.target.value)}
-                  placeholder="e.g. Amjad Hat, Ful-gazi or Feni Sadar"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                Preferred Drop-off Date
-              </label>
-              <input
-                type="date"
-                value={preferredDate}
-                onChange={(e) => setPreferredDate(e.target.value)}
-                className="w-full sm:w-64 px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
-              />
             </div>
           </div>
-
-          {/* Diagnostic Guarantee Callout */}
-          <div className="p-4 rounded-xl bg-blue-950/30 border border-blue-900/50 flex items-start gap-3 text-xs text-blue-200">
-            <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <span className="font-semibold text-white">Transparent Diagnostic Promise:</span>
-              <p className="text-slate-300">
-                Registering a booking does not obligate you to proceed. We test your phone on our DC
-                power supply and microscope first, quote the exact cost, and only start repair upon
-                your clear agreement.
-              </p>
-            </div>
-          </div>
-
-          {/* Submit Button */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-            <div className="text-xs text-slate-400 text-center sm:text-left">
-              Drop-off Location: Chairman Market, Amjad Hat, Ful-gazi, Feni
-            </div>
-
-            <button
-              type="submit"
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2 active:scale-95"
-            >
-              <Wrench className="w-4 h-4" />
-              <span>Confirm & Generate Tracking Code</span>
-            </button>
-          </div>
-        </form>
+        </div>
       ) : (
         /* Success Screen with Real Generated Tracking Code */
         <div className="p-8 rounded-2xl border border-emerald-500/40 bg-slate-900/80 space-y-6 text-center animate-fade-in">
