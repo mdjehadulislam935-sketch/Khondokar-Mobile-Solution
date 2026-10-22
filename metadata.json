@@ -1,0 +1,6 @@
+{
+  "name": "M/S Khandokar Mobile Solution",
+  "description": "Professional mobile phone repair, servicing, and mobile accessories in Feni, Bangladesh.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

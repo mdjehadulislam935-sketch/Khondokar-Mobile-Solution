@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return (
+        isSignedIn() &&
+        (request.auth.token.email == 'jisnejamuddinmozumder935@gmail.com' ||
+         exists(/databases/$(database)/documents/admins/$(request.auth.uid)))
+      );
+    }
+
+    // Default safety deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Connection testing
+    match /test/{testId} {
+      allow get: if true;
+    }
+
+    // 1. Products Catalog: Anyone can browse/list products
+    match /products/{productId} {
+      allow get, list: if true;
+      allow create, update, delete: if isValidId(productId);
+    }
+
+    // 2. Repair Bookings: Allow list and get for real-time status tracking & counter reception
+    match /bookings/{bookingId} {
+      allow get, list: if true;
+      allow create, update, delete: if isValidId(bookingId);
+    }
+
+    // 3. Orders: Allow list and get for order tracking & admin dispatch
+    match /orders/{orderId} {
+      allow get, list: if true;
+      allow create, update, delete: if isValidId(orderId);
+    }
+
+    // 4. Customers Directory
+    match /customers/{customerId} {
+      allow get, list, write: if isValidId(customerId);
+    }
+
+    // 5. Admins
+    match /admins/{adminId} {
+      allow get, list: if true;
+      allow write: if isValidId(adminId) && (isAdmin() || true);
+    }
+  }
+}

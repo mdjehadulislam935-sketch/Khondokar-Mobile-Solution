@@ -1,0 +1,119 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Mobile phone replacement parts, displays, batteries, or accessories",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 150 },
+        "sku": { "type": "string", "maxLength": 50 },
+        "category": { "type": "string", "maxLength": 80 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "image": { "type": "string", "maxLength": 500 },
+        "price": { "type": "number" },
+        "discountPrice": { "type": "number" },
+        "stockQuantity": { "type": "number" },
+        "availability": { "type": "string", "enum": ["in_stock", "out_of_stock", "pre_order"] },
+        "compatibleModels": { "type": "array" },
+        "details": { "type": "object" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "isDemo": { "type": "boolean" },
+        "isArchived": { "type": "boolean" }
+      },
+      "required": ["name", "sku", "category", "price", "stockQuantity"]
+    },
+    "RepairBooking": {
+      "title": "RepairBooking",
+      "description": "Device repair ticket submitted by customer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "trackingCode": { "type": "string", "maxLength": 30 },
+        "customerName": { "type": "string", "maxLength": 100 },
+        "customerPhone": { "type": "string", "maxLength": 30 },
+        "customerEmail": { "type": "string", "maxLength": 100 },
+        "deviceBrand": { "type": "string", "maxLength": 50 },
+        "deviceModel": { "type": "string", "maxLength": 100 },
+        "serviceId": { "type": "string", "maxLength": 50 },
+        "serviceTitle": { "type": "string", "maxLength": 100 },
+        "problemDescription": { "type": "string", "maxLength": 2000 },
+        "customerAddress": { "type": "string", "maxLength": 200 },
+        "preferredDate": { "type": "string", "maxLength": 30 },
+        "status": {
+          "type": "string",
+          "enum": ["received", "diagnosing", "in_repair", "ready_for_pickup", "completed", "cancelled"]
+        },
+        "estimatedCost": { "type": "number" },
+        "actualCost": { "type": "number" },
+        "technicianNotes": { "type": "string", "maxLength": 2000 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["trackingCode", "customerName", "customerPhone", "deviceBrand", "deviceModel", "status"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer purchase order for replacement parts or accessories",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderNumber": { "type": "string", "maxLength": 40 },
+        "customerName": { "type": "string", "maxLength": 100 },
+        "customerPhone": { "type": "string", "maxLength": 30 },
+        "customerEmail": { "type": "string", "maxLength": 100 },
+        "shippingAddress": { "type": "string", "maxLength": 300 },
+        "district": { "type": "string", "maxLength": 50 },
+        "deliveryNotes": { "type": "string", "maxLength": 500 },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "deliveryFee": { "type": "number" },
+        "total": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["cod", "bkash_nagad"] },
+        "paymentStatus": { "type": "string", "enum": ["pending", "verified", "paid"] },
+        "orderStatus": { "type": "string", "enum": ["pending", "processing", "shipped", "delivered", "cancelled"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["orderNumber", "customerName", "customerPhone", "shippingAddress", "total", "orderStatus"]
+    },
+    "CustomerUser": {
+      "title": "CustomerUser",
+      "description": "Customer profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 100 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "email": { "type": "string", "maxLength": 100 },
+        "address": { "type": "string", "maxLength": 300 },
+        "district": { "type": "string", "maxLength": 50 },
+        "registeredAt": { "type": "string" }
+      },
+      "required": ["name", "phone"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": { "$ref": "Product" },
+      "description": "Store products and catalog items"
+    },
+    "/bookings/{bookingId}": {
+      "schema": { "$ref": "RepairBooking" },
+      "description": "Device repair bookings and tickets"
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "Order" },
+      "description": "E-commerce orders and parcel deliveries"
+    },
+    "/customers/{customerId}": {
+      "schema": { "$ref": "CustomerUser" },
+      "description": "Customer accounts and directory"
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "CustomerUser" },
+      "description": "Admin access control list"
+    }
+  }
+}
