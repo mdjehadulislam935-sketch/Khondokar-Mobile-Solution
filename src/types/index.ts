@@ -22,6 +22,12 @@ export interface Product {
   isArchived?: boolean; // soft-delete to preserve order history
 }
 
+export interface ProductCategory {
+  id: string;
+  name: string;
+  description: string;
+}
+
 export interface RepairService {
   id: string;
   title: string;

@@ -35,8 +35,13 @@ export const Footer: React.FC = () => {
           {/* Column 1: Brand & Proprietor Identity */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-600/30">
-                <Wrench className="w-5 h-5 text-white" />
+              <div className="relative w-9 h-9 rounded-xl overflow-hidden border border-blue-500/40 bg-slate-900 shadow-md shadow-blue-600/30 shrink-0">
+                <img
+                  src="/src/assets/images/kms_tech_logo_1792672120996.jpg"
+                  alt="KMS Logo"
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div>
                 <h3 className="font-bold text-white text-base tracking-tight">

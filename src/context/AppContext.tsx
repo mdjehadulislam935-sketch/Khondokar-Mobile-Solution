@@ -6,6 +6,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   Product,
+  ProductCategory,
   RepairService,
   RepairBooking,
   Order,
@@ -18,6 +19,7 @@ import {
 } from '../types';
 import {
   INITIAL_PRODUCTS,
+  INITIAL_CATEGORIES,
   INITIAL_SERVICES,
   INITIAL_BOOKINGS,
   INITIAL_ORDERS,
@@ -95,8 +97,19 @@ interface AppContextType {
   currentUser: CustomerUser | null;
   loginUser: (phoneOrEmail: string) => boolean;
   loginWithGoogle: () => Promise<boolean>;
-  registerUser: (customer: Omit<CustomerUser, 'id' | 'registeredAt'>) => CustomerUser;
   logoutUser: () => void;
+  registerUser: (customer: Omit<CustomerUser, 'id' | 'registeredAt'>) => CustomerUser;
+  // Categories
+  categories: ProductCategory[];
+  addCategory: (name: string, description?: string) => void;
+  deleteCategory: (id: string) => void;
+
+  // Admin Security & Password
+  isAdminAuthenticated: boolean;
+  adminPassword: string;
+  loginAdmin: (password: string) => boolean;
+  logoutAdmin: () => void;
+  updateAdminPassword: (newPass: string) => void;
 
   // Cloud status
   isCloudConnected: boolean;
@@ -184,12 +197,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
+  // Dynamic Categories State
+  const [categories, setCategories] = useState<ProductCategory[]>(() => {
+    try {
+      const saved = localStorage.getItem('kms_categories');
+      return saved ? JSON.parse(saved) : INITIAL_CATEGORIES;
+    } catch {
+      return INITIAL_CATEGORIES;
+    }
+  });
+
+  // Admin Security Password State
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('kms_admin_auth') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const [adminPassword, setAdminPasswordState] = useState<string>(() => {
+    try {
+      return localStorage.getItem('kms_admin_password') || 'KMS@2026!';
+    } catch {
+      return 'KMS@2026!';
+    }
+  });
+
   const [toast, setToast] = useState<ToastState | null>(null);
 
   // Local storage backup sync
   useEffect(() => {
     localStorage.setItem('kms_products', JSON.stringify(products));
   }, [products]);
+
+  useEffect(() => {
+    localStorage.setItem('kms_categories', JSON.stringify(categories));
+  }, [categories]);
 
   useEffect(() => {
     localStorage.setItem('kms_cart', JSON.stringify(cart));
@@ -580,6 +624,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('Signed out successfully', 'info');
   };
 
+  // Category Actions
+  const addCategory = (name: string, description?: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      showToast('Category name cannot be empty', 'error');
+      return;
+    }
+    if (categories.some((c) => c.name.toLowerCase() === trimmed.toLowerCase())) {
+      showToast('Category already exists', 'error');
+      return;
+    }
+    const newCat: ProductCategory = {
+      id: `cat-${Date.now()}`,
+      name: trimmed,
+      description: description?.trim() || 'Custom smartphone accessory and parts category',
+    };
+    setCategories((prev) => [...prev, newCat]);
+    showToast(`Added new category "${trimmed}"`, 'success');
+  };
+
+  const deleteCategory = (id: string) => {
+    const target = categories.find((c) => c.id === id);
+    if (!target) return;
+    setCategories((prev) => prev.filter((c) => c.id !== id));
+    showToast(`Removed category "${target.name}"`, 'info');
+  };
+
+  // Admin Authentication Actions
+  const loginAdmin = (passwordAttempt: string): boolean => {
+    if (passwordAttempt.trim() === adminPassword) {
+      setIsAdminAuthenticated(true);
+      sessionStorage.setItem('kms_admin_auth', 'true');
+      showToast('Welcome to Admin Portal, Proprietor!', 'success');
+      return true;
+    }
+    showToast('Invalid admin password. Please try again.', 'error');
+    return false;
+  };
+
+  const logoutAdmin = () => {
+    setIsAdminAuthenticated(false);
+    sessionStorage.removeItem('kms_admin_auth');
+    showToast('Logged out of Admin Console', 'info');
+  };
+
+  const updateAdminPassword = (newPass: string) => {
+    const trimmed = newPass.trim();
+    if (trimmed.length < 4) {
+      showToast('Password must be at least 4 characters', 'error');
+      return;
+    }
+    setAdminPasswordState(trimmed);
+    localStorage.setItem('kms_admin_password', trimmed);
+    showToast('Admin password changed successfully!', 'success');
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -597,6 +697,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addProduct,
         updateProduct,
         deleteProduct,
+        categories,
+        addCategory,
+        deleteCategory,
+        isAdminAuthenticated,
+        adminPassword,
+        loginAdmin,
+        logoutAdmin,
+        updateAdminPassword,
         services,
         cart,
         addToCart,

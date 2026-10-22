@@ -9,17 +9,10 @@ import { ProductCard } from '../common/ProductCard';
 import { Search, SlidersHorizontal, Info, ShoppingBag, X, Check } from 'lucide-react';
 
 export const ShopPage: React.FC = () => {
-  const { products, selectedCategory, setSelectedCategory, searchQuery, setSearchQuery } = useApp();
+  const { products, categories: appCategories, selectedCategory, setSelectedCategory, searchQuery, setSearchQuery } = useApp();
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc'>('featured');
 
-  const categories = [
-    'All',
-    'Screens & Displays',
-    'Batteries',
-    'Internal Parts',
-    'Accessories',
-    'Services & Care',
-  ];
+  const categories = useMemo(() => ['All', ...appCategories.map((c) => c.name)], [appCategories]);
 
   // Real-time filtering matching by name, category, SKU, or compatible phone models
   const filteredProducts = useMemo(() => {

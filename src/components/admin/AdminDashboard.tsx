@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { AdminSection, Product, RepairStatus, OrderStatus } from '../../types';
 import { BUSINESS_INFO } from '../../data/initialData';
@@ -35,6 +35,16 @@ import {
   Mail,
   MapPin,
   Lock,
+  MoreVertical,
+  Upload,
+  Image as ImageIcon,
+  KeyRound,
+  Eye,
+  EyeOff,
+  Copy,
+  MessageSquare,
+  LogOut,
+  FolderPlus,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -47,6 +57,14 @@ export const AdminDashboard: React.FC = () => {
     addProduct,
     updateProduct,
     deleteProduct,
+    categories,
+    addCategory,
+    deleteCategory,
+    isAdminAuthenticated,
+    adminPassword,
+    loginAdmin,
+    logoutAdmin,
+    updateAdminPassword,
     bookings,
     updateBookingStatus,
     orders,
@@ -55,34 +73,51 @@ export const AdminDashboard: React.FC = () => {
     showToast,
   } = useApp();
 
+  // Admin Login States
+  const [passwordInput, setPasswordInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  // 3-dot dropdown active ID (e.g. 'prod-01' or 'rep-101')
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatDesc, setNewCatDesc] = useState('');
 
   // Form states for product
   const [pName, setPName] = useState('');
   const [pSku, setPSku] = useState('');
-  const [pCategory, setPCategory] = useState('Screens & Displays');
+  const [pCategory, setPCategory] = useState(categories[0]?.name || 'Screens & Displays');
   const [pPrice, setPPrice] = useState(1000);
   const [pDiscountPrice, setPDiscountPrice] = useState<number | undefined>(undefined);
   const [pStock, setPStock] = useState(10);
   const [pDesc, setPDesc] = useState('');
   const [pCompatible, setPCompatible] = useState('Samsung, Xiaomi, Vivo');
+  const [pImage, setPImage] = useState<string>('/src/assets/images/oled_display_module_1792669913235.jpg');
 
-  // Search in admin
-  const [adminSearch, setAdminSearch] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Selected booking for editing
-  const [selectedBookingForEdit, setSelectedBookingForEdit] = useState<string | null>(null);
-  const [bookingStatusInput, setBookingStatusInput] = useState<RepairStatus>('received');
-  const [techNotesInput, setTechNotesInput] = useState('');
-  const [costInput, setCostInput] = useState<number>(500);
+  // Password change state in settings
+  const [newAdminPass, setNewAdminPass] = useState('');
+  const [confirmAdminPass, setConfirmAdminPass] = useState('');
 
   // Business info state for editor
   const [bPhone, setBPhone] = useState(BUSINESS_INFO.phone);
   const [bEmail, setBEmail] = useState(BUSINESS_INFO.email);
   const [bAddress, setBAddress] = useState(BUSINESS_INFO.address);
   const [bHours, setBHours] = useState(BUSINESS_INFO.openingHours);
+
+  // Preset stock images to choose from
+  const presetImages = [
+    { label: 'OLED Display', url: '/src/assets/images/oled_display_module_1792669913235.jpg' },
+    { label: 'Fast Charger & Cable', url: '/src/assets/images/fast_charger_accessories_1792669912435.jpg' },
+    { label: 'Technician Workstation', url: '/src/assets/images/technician_workstation_1792669912683.jpg' },
+    { label: 'Diagnostic Lab Bench', url: '/src/assets/images/hero_repair_lab_1792669912345.jpg' },
+    { label: 'KMS Brand Logo', url: '/src/assets/images/kms_tech_logo_1792672120996.jpg' },
+  ];
 
   // Metrics calculation
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
@@ -94,12 +129,13 @@ export const AdminDashboard: React.FC = () => {
   const handleOpenAdd = () => {
     setPName('');
     setPSku(`KMS-NEW-${Math.floor(100 + Math.random() * 900)}`);
-    setPCategory('Accessories');
+    setPCategory(categories[0]?.name || 'Screens & Displays');
     setPPrice(500);
     setPDiscountPrice(undefined);
     setPStock(20);
     setPDesc('');
     setPCompatible('Universal Smartphone');
+    setPImage('/src/assets/images/oled_display_module_1792669913235.jpg');
     setShowAddModal(true);
   };
 
@@ -113,6 +149,28 @@ export const AdminDashboard: React.FC = () => {
     setPStock(p.stockQuantity);
     setPDesc(p.description);
     setPCompatible(p.compatibleModels.join(', '));
+    setPImage(p.image);
+    setActiveMenuId(null);
+  };
+
+  // Image upload handler (converts uploaded file from user device to Base64)
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 4 * 1024 * 1024) {
+      alert('Image size exceeds 4MB. Please choose a smaller photo.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        setPImage(reader.result);
+        showToast('Product photo uploaded successfully!', 'success');
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSaveProduct = (e: React.FormEvent) => {
@@ -131,6 +189,7 @@ export const AdminDashboard: React.FC = () => {
         discountPrice: pDiscountPrice ? Number(pDiscountPrice) : undefined,
         stockQuantity: Number(pStock),
         description: pDesc,
+        image: pImage,
         compatibleModels: models,
       });
       setEditingProduct(null);
@@ -144,13 +203,41 @@ export const AdminDashboard: React.FC = () => {
         stockQuantity: Number(pStock),
         availability: Number(pStock) > 0 ? 'in_stock' : 'out_of_stock',
         description: pDesc || 'High quality mobile replacement part.',
-        image: '/src/assets/images/fast_charger_accessories_1792669912435.jpg',
+        image: pImage || '/src/assets/images/oled_display_module_1792669913235.jpg',
         compatibleModels: models,
         details: { Warranty: '30-Day Testing Guarantee' },
         isDemo: true,
       });
       setShowAddModal(false);
     }
+  };
+
+  const handleAddCategorySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+    addCategory(newCatName, newCatDesc);
+    setNewCatName('');
+    setNewCatDesc('');
+    setShowCategoryModal(false);
+  };
+
+  const handleAdminLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const ok = loginAdmin(passwordInput);
+    if (ok) {
+      setPasswordInput('');
+    }
+  };
+
+  const handlePasswordChangeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newAdminPass !== confirmAdminPass) {
+      alert('New passwords do not match!');
+      return;
+    }
+    updateAdminPassword(newAdminPass);
+    setNewAdminPass('');
+    setConfirmAdminPass('');
   };
 
   const navItems: { id: AdminSection; label: string; icon: React.ReactNode }[] = [
@@ -167,13 +254,116 @@ export const AdminDashboard: React.FC = () => {
     { id: 'security', label: 'Account & Security', icon: <ShieldCheck className="w-4 h-4" /> },
   ];
 
+  // -------------------------------------------------------------
+  // PASSWORD GATE: IF NOT AUTHENTICATED AS ADMIN
+  // -------------------------------------------------------------
+  if (!isAdminAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#070b14] text-slate-100 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 space-y-6 shadow-2xl relative">
+          {/* Logo and Title */}
+          <div className="text-center space-y-3">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-blue-500/50 shadow-xl shadow-blue-500/20 mx-auto">
+              <img
+                src="/src/assets/images/kms_tech_logo_1792672120996.jpg"
+                alt="Khandokar Mobile Solution Logo"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white tracking-tight">Admin Console Login</h1>
+              <p className="text-xs text-blue-400 font-medium">M/S Khandokar Mobile Solution</p>
+            </div>
+            <p className="text-xs text-slate-400">
+              Please enter the administrative password to access workshop operations, stock, and customer bookings.
+            </p>
+          </div>
+
+          <form onSubmit={handleAdminLoginSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                Admin Password *
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  placeholder="Enter admin password..."
+                  className="w-full pl-3.5 pr-10 py-3 rounded-xl bg-slate-950 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-blue-500 font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 active:scale-95"
+            >
+              <KeyRound className="w-4 h-4" />
+              <span>Unlock Admin Console</span>
+            </button>
+          </form>
+
+          {/* Quick Default Password Helper for the User */}
+          <div className="p-4 rounded-xl bg-blue-950/30 border border-blue-900/50 text-xs text-slate-300 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-white">Default Admin Password:</span>
+              <button
+                type="button"
+                onClick={() => setPasswordInput(adminPassword)}
+                className="text-[11px] text-blue-400 hover:text-blue-300 font-mono underline"
+              >
+                Auto Fill
+              </button>
+            </div>
+            <div className="font-mono text-sm text-blue-400 bg-slate-950/80 px-2.5 py-1.5 rounded border border-slate-800 flex items-center justify-between">
+              <span>{adminPassword}</span>
+              <span className="text-[10px] text-slate-500 font-sans">Proprietor Access</span>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed pt-1">
+              You can change this password at any time inside the <strong>Account & Security Settings</strong> tab.
+            </p>
+          </div>
+
+          <div className="text-center">
+            <button
+              onClick={() => {
+                setIsAdminMode(false);
+                navigate('home');
+              }}
+              className="text-xs text-slate-400 hover:text-white transition-colors"
+            >
+              ← Return to Public Website
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // AUTHENTICATED ADMIN CONSOLE
+  // -------------------------------------------------------------
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col" onClick={() => setActiveMenuId(null)}>
       {/* Admin Top Bar */}
       <header className="h-16 border-b border-slate-800 bg-slate-950/80 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-600/30">
-            <ShieldCheck className="w-5 h-5 text-white" />
+          <div className="relative w-9 h-9 rounded-xl overflow-hidden border border-blue-500/40 bg-slate-900 shadow-md shadow-blue-600/30 shrink-0">
+            <img
+              src="/src/assets/images/kms_tech_logo_1792672120996.jpg"
+              alt="KMS Tech Logo"
+              className="w-full h-full object-cover"
+            />
           </div>
           <div>
             <div className="font-bold text-sm sm:text-base text-white tracking-tight">
@@ -190,6 +380,15 @@ export const AdminDashboard: React.FC = () => {
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-emerald-400 font-medium">Firestore Live (Free Plan)</span>
           </div>
+
+          <button
+            onClick={logoutAdmin}
+            className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-rose-400 border border-slate-800 text-xs font-medium flex items-center gap-1.5 transition-colors"
+            title="Lock Admin Console"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Lock / Sign Out</span>
+          </button>
 
           <button
             onClick={() => {
@@ -228,9 +427,18 @@ export const AdminDashboard: React.FC = () => {
             ))}
           </nav>
 
-          <div className="mt-8 p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 text-[11px] text-slate-400 space-y-1">
-            <div className="font-semibold text-slate-200">Proprietor:</div>
-            <div>{BUSINESS_INFO.proprietor}</div>
+          <div className="mt-8 p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800/80 text-[11px] text-slate-400 space-y-1.5">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg overflow-hidden border border-blue-500/40">
+                <img
+                  src="/src/assets/images/kms_tech_logo_1792672120996.jpg"
+                  alt="KMS"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="font-semibold text-slate-200">{BUSINESS_INFO.proprietor}</div>
+            </div>
+            <div className="text-slate-400 text-[10px]">Lead Technician & Entrepreneur</div>
             <div className="text-slate-500 font-mono text-[10px]">{BUSINESS_INFO.phone}</div>
           </div>
         </aside>
@@ -284,7 +492,7 @@ export const AdminDashboard: React.FC = () => {
                   <div className="text-2xl font-mono font-bold text-white tabular-nums">
                     {products.filter((p) => !p.isArchived).length}
                   </div>
-                  <div className="text-[11px] text-slate-400">12 Initial demonstration items</div>
+                  <div className="text-[11px] text-slate-400">{categories.length} active categories</div>
                 </div>
 
                 <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/60 space-y-2">
@@ -299,7 +507,7 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Recent Repair Bookings Table */}
+              {/* Recent Repair Bookings Table with 3-dot Menu */}
               <div className="p-6 rounded-2xl border border-slate-800 bg-slate-900/50 space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-base font-bold text-white">Recent Repair Bookings</h2>
@@ -320,6 +528,7 @@ export const AdminDashboard: React.FC = () => {
                         <th className="py-2.5 px-3">Device & Fault</th>
                         <th className="py-2.5 px-3">Status</th>
                         <th className="py-2.5 px-3 text-right">Est. Cost</th>
+                        <th className="py-2.5 px-3 text-center">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60">
@@ -348,6 +557,67 @@ export const AdminDashboard: React.FC = () => {
                           <td className="py-3 px-3 text-right font-mono text-white font-bold">
                             ৳{b.estimatedCost ?? '—'}
                           </td>
+                          <td className="py-3 px-3 text-center relative">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveMenuId(activeMenuId === b.id ? null : b.id);
+                              }}
+                              className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+
+                            {/* 3-dot dropdown menu */}
+                            {activeMenuId === b.id && (
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                className="absolute right-0 top-10 z-30 w-44 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl py-1 text-xs text-left"
+                              >
+                                <button
+                                  onClick={() => {
+                                    const nextStatus: RepairStatus =
+                                      b.status === 'received'
+                                        ? 'diagnosing'
+                                        : b.status === 'diagnosing'
+                                        ? 'in_repair'
+                                        : b.status === 'in_repair'
+                                        ? 'ready_for_pickup'
+                                        : 'completed';
+                                    updateBookingStatus(b.id, nextStatus);
+                                    setActiveMenuId(null);
+                                  }}
+                                  className="w-full px-3 py-2 text-slate-200 hover:bg-slate-800 hover:text-blue-400 flex items-center gap-2"
+                                >
+                                  <Clock className="w-3.5 h-3.5" />
+                                  <span>Advance Status</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(b.trackingCode);
+                                    showToast(`Copied ${b.trackingCode}`, 'success');
+                                    setActiveMenuId(null);
+                                  }}
+                                  className="w-full px-3 py-2 text-slate-200 hover:bg-slate-800 flex items-center gap-2"
+                                >
+                                  <Copy className="w-3.5 h-3.5" />
+                                  <span>Copy Tracking Code</span>
+                                </button>
+                                <a
+                                  href={`https://wa.me/${b.customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent(
+                                    `Hello ${b.customerName}, this is Khandokar Mobile Solution regarding your device repair ${b.trackingCode}.`
+                                  )}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="w-full px-3 py-2 text-slate-200 hover:bg-slate-800 text-emerald-400 flex items-center gap-2"
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5" />
+                                  <span>WhatsApp Customer</span>
+                                </a>
+                              </div>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -357,7 +627,7 @@ export const AdminDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* SECTION 2: PRODUCT MANAGEMENT */}
+          {/* SECTION 2: PRODUCT MANAGEMENT (WITH IMAGE UPLOAD & 3-DOT MENU) */}
           {adminSection === 'products' && (
             <div className="space-y-6 animate-fade-in">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -366,8 +636,7 @@ export const AdminDashboard: React.FC = () => {
                     Product Management
                   </h1>
                   <p className="text-xs text-slate-400 mt-1">
-                    Add, edit, search, and soft-delete products. Deleting protects historical customer
-                    order records.
+                    Add new products with real image upload, configure stock, and use 3-dot actions.
                   </p>
                 </div>
                 <button
@@ -385,12 +654,13 @@ export const AdminDashboard: React.FC = () => {
                   <table className="w-full text-xs text-left">
                     <thead className="text-slate-400 border-b border-slate-800 bg-slate-950/40">
                       <tr>
+                        <th className="py-3 px-4">Picture</th>
                         <th className="py-3 px-4">Product Name & SKU</th>
                         <th className="py-3 px-4">Category</th>
                         <th className="py-3 px-4">Price (BDT)</th>
                         <th className="py-3 px-4">Stock</th>
                         <th className="py-3 px-4">Status</th>
-                        <th className="py-3 px-4 text-right">Actions</th>
+                        <th className="py-3 px-4 text-center">Actions (3-Dot)</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60">
@@ -399,6 +669,16 @@ export const AdminDashboard: React.FC = () => {
                           key={p.id}
                           className={`hover:bg-slate-800/40 ${p.isArchived ? 'opacity-40' : ''}`}
                         >
+                          <td className="py-3 px-4">
+                            <div className="w-12 h-12 rounded-lg overflow-hidden border border-slate-800 bg-slate-950 shrink-0">
+                              <img
+                                src={p.image}
+                                alt={p.name}
+                                referrerPolicy="no-referrer"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          </td>
                           <td className="py-3 px-4">
                             <div className="font-semibold text-white">{p.name}</div>
                             <div className="text-[11px] font-mono text-slate-500">{p.sku}</div>
@@ -432,22 +712,81 @@ export const AdminDashboard: React.FC = () => {
                               <span className="text-amber-400 font-medium">Pre-Order</span>
                             )}
                           </td>
-                          <td className="py-3 px-4 text-right space-x-2">
+                          <td className="py-3 px-4 text-center relative">
+                            {/* 3-dot Button */}
                             <button
-                              onClick={() => handleOpenEdit(p)}
-                              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-                              title="Edit product"
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveMenuId(activeMenuId === p.id ? null : p.id);
+                              }}
+                              className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                              title="More Options"
                             >
-                              <Edit2 className="w-3.5 h-3.5" />
+                              <MoreVertical className="w-4 h-4" />
                             </button>
-                            {!p.isArchived && (
-                              <button
-                                onClick={() => deleteProduct(p.id)}
-                                className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 transition-colors"
-                                title="Soft Delete (Preserves order history)"
+
+                            {/* 3-dot Dropdown Menu */}
+                            {activeMenuId === p.id && (
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                className="absolute right-2 top-10 z-30 w-48 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl py-1 text-xs text-left"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                                <button
+                                  onClick={() => handleOpenEdit(p)}
+                                  className="w-full px-3.5 py-2 text-slate-200 hover:bg-slate-800 hover:text-blue-400 flex items-center gap-2"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                  <span>Edit Product Details</span>
+                                </button>
+
+                                <button
+                                  onClick={() => {
+                                    updateProduct(p.id, { stockQuantity: p.stockQuantity + 5 });
+                                    setActiveMenuId(null);
+                                  }}
+                                  className="w-full px-3.5 py-2 text-slate-200 hover:bg-slate-800 flex items-center gap-2"
+                                >
+                                  <Plus className="w-3.5 h-3.5 text-emerald-400" />
+                                  <span>Quick Add +5 Stock</span>
+                                </button>
+
+                                <button
+                                  onClick={() => {
+                                    addProduct({
+                                      name: `${p.name} (Copy)`,
+                                      sku: `${p.sku}-CP`,
+                                      category: p.category,
+                                      price: p.price,
+                                      stockQuantity: p.stockQuantity,
+                                      availability: p.availability,
+                                      description: p.description,
+                                      image: p.image,
+                                      compatibleModels: p.compatibleModels,
+                                      details: p.details,
+                                      isDemo: true,
+                                    });
+                                    setActiveMenuId(null);
+                                  }}
+                                  className="w-full px-3.5 py-2 text-slate-200 hover:bg-slate-800 flex items-center gap-2"
+                                >
+                                  <Copy className="w-3.5 h-3.5" />
+                                  <span>Duplicate Item</span>
+                                </button>
+
+                                {!p.isArchived && (
+                                  <button
+                                    onClick={() => {
+                                      deleteProduct(p.id);
+                                      setActiveMenuId(null);
+                                    }}
+                                    className="w-full px-3.5 py-2 text-rose-400 hover:bg-rose-950/40 flex items-center gap-2 border-t border-slate-800"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <span>Archive / Soft Delete</span>
+                                  </button>
+                                )}
+                              </div>
                             )}
                           </td>
                         </tr>
@@ -459,33 +798,58 @@ export const AdminDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* SECTION 3: CATEGORY MANAGEMENT */}
+          {/* SECTION 3: CATEGORY MANAGEMENT (WITH ADD NEW CATEGORY) */}
           {adminSection === 'categories' && (
             <div className="space-y-6 animate-fade-in">
-              <h1 className="text-2xl font-bold text-white tracking-tight">Category Management</h1>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl font-bold text-white tracking-tight">Category Management</h1>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Manage store categories. New categories added here will be immediately available in the shop and product editor.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowCategoryModal(true)}
+                  className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs shadow-md shadow-blue-600/30 transition-all flex items-center gap-1.5 self-start sm:self-auto"
+                >
+                  <FolderPlus className="w-4 h-4" />
+                  <span>+ Add New Category</span>
+                </button>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[
-                  { name: 'Screens & Displays', desc: 'OLED, AMOLED, and IPS LCD assemblies' },
-                  { name: 'Batteries', desc: 'High-density fresh-cycle lithium batteries' },
-                  { name: 'Internal Parts', desc: 'Charging docks, camera sensors, speakers, mics' },
-                  { name: 'Accessories', desc: 'GaN fast wall chargers, braided cables, cases' },
-                  { name: 'Services & Care', desc: 'Diagnostic evaluations, ultrasonic maintenance' },
-                ].map((cat, i) => {
+                {categories.map((cat) => {
                   const count = products.filter(
-                    (p) => !p.isArchived && p.category === cat.name
+                    (p) => !p.isArchived && p.category.toLowerCase() === cat.name.toLowerCase()
                   ).length;
                   return (
                     <div
-                      key={i}
-                      className="p-5 rounded-xl border border-slate-800 bg-slate-900/60 space-y-2"
+                      key={cat.id}
+                      className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between space-y-3 relative group"
                     >
-                      <div className="flex justify-between items-center">
-                        <h3 className="font-bold text-white text-sm">{cat.name}</h3>
-                        <span className="font-mono text-xs text-blue-400 font-bold">
-                          {count} Products
-                        </span>
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between items-center">
+                          <h3 className="font-bold text-white text-sm">{cat.name}</h3>
+                          <span className="font-mono text-xs text-blue-400 font-bold bg-blue-950/60 px-2 py-0.5 rounded border border-blue-800/50">
+                            {count} Items
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 leading-relaxed">{cat.description}</p>
                       </div>
-                      <p className="text-xs text-slate-400">{cat.desc}</p>
+
+                      <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                        <span className="text-[11px] text-slate-500">Slug: {cat.name.toLowerCase().replace(/\s+/g, '-')}</span>
+                        {categories.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => deleteCategory(cat.id)}
+                            className="text-slate-500 hover:text-rose-400 text-xs p-1"
+                            title="Delete category"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -493,7 +857,7 @@ export const AdminDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* SECTION 4: REPAIR BOOKINGS MANAGEMENT */}
+          {/* SECTION 4: REPAIR BOOKINGS MANAGEMENT (WITH 3-DOT MENU) */}
           {adminSection === 'bookings' && (
             <div className="space-y-6 animate-fade-in">
               <div>
@@ -501,8 +865,7 @@ export const AdminDashboard: React.FC = () => {
                   Repair Booking Management
                 </h1>
                 <p className="text-xs text-slate-400 mt-1">
-                  Update customer device repair statuses, add diagnostic notes, and record final
-                  servicing costs.
+                  Update customer device repair statuses, add diagnostic notes, and record final servicing costs.
                 </p>
               </div>
 
@@ -510,7 +873,7 @@ export const AdminDashboard: React.FC = () => {
                 {bookings.map((b) => (
                   <div
                     key={b.id}
-                    className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60 space-y-4"
+                    className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60 space-y-4 relative"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
                       <div>
@@ -526,7 +889,7 @@ export const AdminDashboard: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <select
                           value={b.status}
                           onChange={(e) =>
@@ -541,6 +904,65 @@ export const AdminDashboard: React.FC = () => {
                           <option value="completed">Completed</option>
                           <option value="cancelled">Cancelled</option>
                         </select>
+
+                        {/* 3-dot button */}
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMenuId(activeMenuId === b.id ? null : b.id);
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+
+                          {activeMenuId === b.id && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="absolute right-0 top-10 z-30 w-48 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl py-1 text-xs text-left"
+                            >
+                              <button
+                                onClick={() => {
+                                  const cost = prompt('Update estimated/actual repair cost (৳):', String(b.estimatedCost || ''));
+                                  if (cost && !isNaN(Number(cost))) {
+                                    updateBookingStatus(b.id, b.status, undefined, Number(cost));
+                                  }
+                                  setActiveMenuId(null);
+                                }}
+                                className="w-full px-3.5 py-2 text-slate-200 hover:bg-slate-800 flex items-center gap-2"
+                              >
+                                <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>Set Servicing Cost</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const note = prompt('Update technician note for this device:', b.technicianNotes || '');
+                                  if (note !== null) {
+                                    updateBookingStatus(b.id, b.status, note);
+                                  }
+                                  setActiveMenuId(null);
+                                }}
+                                className="w-full px-3.5 py-2 text-slate-200 hover:bg-slate-800 flex items-center gap-2"
+                              >
+                                <Edit2 className="w-3.5 h-3.5 text-blue-400" />
+                                <span>Edit Bench Note</span>
+                              </button>
+                              <a
+                                href={`https://wa.me/${b.customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent(
+                                  `Assalamu Alaikum ${b.customerName}, your device (${b.deviceBrand} ${b.deviceModel}) status at Khandokar Mobile Solution is now: ${b.status.replace('_', ' ')}.`
+                                )}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="w-full px-3.5 py-2 text-emerald-400 hover:bg-slate-800 flex items-center gap-2"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                <span>Send WhatsApp Update</span>
+                              </a>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -560,17 +982,9 @@ export const AdminDashboard: React.FC = () => {
                       <div>
                         Estimated Cost: <strong className="text-white font-mono">৳{b.estimatedCost ?? '—'}</strong>
                       </div>
-                      <button
-                        onClick={() => {
-                          const note = prompt('Update technician note for this device:', b.technicianNotes || '');
-                          if (note !== null) {
-                            updateBookingStatus(b.id, b.status, note);
-                          }
-                        }}
-                        className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium"
-                      >
-                        Edit Technician Note
-                      </button>
+                      <span className="text-slate-500 font-mono text-[11px]">
+                        Registered: {new Date(b.createdAt).toLocaleString()}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -578,7 +992,7 @@ export const AdminDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* SECTION 5: ORDER MANAGEMENT */}
+          {/* SECTION 5: ORDER MANAGEMENT (WITH 3-DOT MENU) */}
           {adminSection === 'orders' && (
             <div className="space-y-6 animate-fade-in">
               <h1 className="text-2xl font-bold text-white tracking-tight">Order Management</h1>
@@ -586,7 +1000,7 @@ export const AdminDashboard: React.FC = () => {
                 {orders.map((o) => (
                   <div
                     key={o.id}
-                    className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60 space-y-4"
+                    className="p-5 rounded-2xl border border-slate-800 bg-slate-900/60 space-y-4 relative"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
                       <div>
@@ -612,6 +1026,49 @@ export const AdminDashboard: React.FC = () => {
                           <option value="delivered">Delivered</option>
                           <option value="cancelled">Cancelled</option>
                         </select>
+
+                        {/* 3-dot dropdown */}
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMenuId(activeMenuId === o.id ? null : o.id);
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+
+                          {activeMenuId === o.id && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="absolute right-0 top-10 z-30 w-48 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl py-1 text-xs text-left"
+                            >
+                              <button
+                                onClick={() => {
+                                  updateOrderStatus(o.id, 'delivered');
+                                  setActiveMenuId(null);
+                                }}
+                                className="w-full px-3.5 py-2 text-slate-200 hover:bg-slate-800 flex items-center gap-2"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>Mark as Delivered</span>
+                              </button>
+                              <a
+                                href={`https://wa.me/${o.customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent(
+                                  `Assalamu Alaikum ${o.customerName}, your parcel ${o.orderNumber} from Khandokar Mobile Solution has been dispatched!`
+                                )}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="w-full px-3.5 py-2 text-emerald-400 hover:bg-slate-800 flex items-center gap-2"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                <span>WhatsApp Customer</span>
+                              </a>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -654,9 +1111,14 @@ export const AdminDashboard: React.FC = () => {
                       key={p.id}
                       className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 flex items-center justify-between gap-4"
                     >
-                      <div>
-                        <div className="font-semibold text-white text-xs">{p.name}</div>
-                        <div className="font-mono text-[11px] text-slate-500">{p.sku}</div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-800 shrink-0 bg-slate-950">
+                          <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-white text-xs">{p.name}</div>
+                          <div className="font-mono text-[11px] text-slate-500">{p.sku}</div>
+                        </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <span
@@ -838,35 +1300,73 @@ export const AdminDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* SECTION 11: ACCOUNT AND SECURITY SETTINGS */}
+          {/* SECTION 11: ACCOUNT AND SECURITY SETTINGS (WITH ADMIN PASSWORD CHANGE) */}
           {adminSection === 'security' && (
             <div className="space-y-6 animate-fade-in">
               <h1 className="text-2xl font-bold text-white tracking-tight">
                 Account & Security Settings
               </h1>
+
+              {/* Password Change Card */}
+              <div className="p-6 rounded-2xl border border-blue-500/30 bg-slate-900/70 space-y-4">
+                <div className="flex items-center gap-2 text-white font-bold text-sm">
+                  <KeyRound className="w-4 h-4 text-blue-400" />
+                  <span>Change Admin Access Password</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Update the proprietor administrative master password used to unlock this Admin Console.
+                </p>
+
+                <form onSubmit={handlePasswordChangeSubmit} className="space-y-3 max-w-md text-xs">
+                  <div>
+                    <label className="block text-slate-300 mb-1">New Password *</label>
+                    <input
+                      type="password"
+                      required
+                      value={newAdminPass}
+                      onChange={(e) => setNewAdminPass(e.target.value)}
+                      placeholder="Enter new admin password..."
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 mb-1">Confirm New Password *</label>
+                    <input
+                      type="password"
+                      required
+                      value={confirmAdminPass}
+                      onChange={(e) => setConfirmAdminPass(e.target.value)}
+                      placeholder="Re-type new password..."
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-colors"
+                  >
+                    Save New Password
+                  </button>
+                </form>
+              </div>
+
+              {/* Backend Integration Readiness Checklist */}
               <div className="p-6 rounded-2xl border border-slate-800 bg-slate-900/60 space-y-4 text-xs leading-relaxed text-slate-300">
                 <div className="flex items-center gap-2 text-white font-bold text-sm">
-                  <Lock className="w-4 h-4 text-blue-400" />
-                  <span>Backend Integration Readiness Checklist</span>
+                  <Lock className="w-4 h-4 text-emerald-400" />
+                  <span>Cloud Database & Security Architecture</span>
                 </div>
                 <p>
-                  In accordance with security requirements, no plain-text database passwords or
-                  hardcoded API keys are stored in client JavaScript. This admin foundation provides
-                  full interface modeling and state controllers ready to connect to:
+                  Connected to Google Cloud Firestore (Free Spark Tier). Live data sync enabled for products, bookings, and customer orders.
                 </p>
                 <ul className="list-disc pl-5 space-y-1.5 text-slate-400">
                   <li>
-                    <strong className="text-slate-200">Database Engine:</strong> PostgreSQL / Cloud
-                    SQL or Firebase Firestore via server-side proxy routes.
+                    <strong className="text-slate-200">Database Engine:</strong> Cloud Firestore Live (Free Tier)
                   </li>
                   <li>
-                    <strong className="text-slate-200">Authentication:</strong> Role-based access
-                    control (Super Admin, Bench Technician, Customer) with secure HTTP-only cookies
-                    or JWT.
+                    <strong className="text-slate-200">Security Rules:</strong> Deployed via DeployRules RPC
                   </li>
                   <li>
-                    <strong className="text-slate-200">SMS Gateway:</strong> Bangladeshi SMS API
-                    (e.g., Greenweb, BulkSMSBD) for automated repair tracking alerts.
+                    <strong className="text-slate-200">Admin Email:</strong> jisnejamuddinmozumder935@gmail.com
                   </li>
                 </ul>
               </div>
@@ -875,13 +1375,16 @@ export const AdminDashboard: React.FC = () => {
         </main>
       </div>
 
-      {/* Add / Edit Product Modal */}
+      {/* -------------------------------------------------------------
+          ADD / EDIT PRODUCT MODAL (WITH REAL IMAGE UPLOAD & PRESETS)
+         ------------------------------------------------------------- */}
       {(showAddModal || editingProduct) && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-xl w-full p-6 space-y-5 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h2 className="text-base font-bold text-white">
-                {editingProduct ? 'Edit Product' : 'Add New Product'}
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <Package className="w-4 h-4 text-blue-400" />
+                <span>{editingProduct ? 'Edit Product' : 'Add New Product'}</span>
               </h2>
               <button
                 onClick={() => {
@@ -895,6 +1398,81 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveProduct} className="space-y-4 text-xs">
+              {/* Image Upload & Preview Section */}
+              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                <label className="block text-slate-200 font-semibold flex items-center gap-1.5">
+                  <ImageIcon className="w-4 h-4 text-blue-400" />
+                  <span>Product Picture / Photo *</span>
+                </label>
+
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  {/* Image Preview Box */}
+                  <div className="w-24 h-24 rounded-xl overflow-hidden border border-slate-700 bg-slate-900 shrink-0 relative">
+                    <img
+                      src={pImage}
+                      alt="Product preview"
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  <div className="flex-1 space-y-2 w-full">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full sm:w-auto px-4 py-2 rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/40 hover:bg-blue-600/30 font-semibold flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload Picture from Device</span>
+                    </button>
+                    <div className="text-[11px] text-slate-400">
+                      Supports PNG, JPG, WEBP photos from your smartphone camera or file storage.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Direct Image URL input */}
+                <div>
+                  <label className="block text-slate-400 mb-1 text-[11px]">Or Paste Image URL directly:</label>
+                  <input
+                    type="text"
+                    value={pImage}
+                    onChange={(e) => setPImage(e.target.value)}
+                    placeholder="https://... or /src/assets/images/..."
+                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 font-mono text-[11px]"
+                  />
+                </div>
+
+                {/* Preset Fast Picker */}
+                <div>
+                  <div className="text-[11px] text-slate-400 mb-1.5 font-medium">Or Pick Stock Preset Photo:</div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {presetImages.map((preset, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setPImage(preset.url)}
+                        className={`p-1.5 rounded-lg border text-left flex items-center gap-2 transition-all ${
+                          pImage === preset.url
+                            ? 'border-blue-500 bg-blue-950/40'
+                            : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
+                        }`}
+                      >
+                        <img src={preset.url} alt={preset.label} className="w-6 h-6 rounded object-cover" />
+                        <span className="text-[10px] text-slate-300 truncate">{preset.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-slate-300 font-medium mb-1">Product Name *</label>
                 <input
@@ -902,7 +1480,7 @@ export const AdminDashboard: React.FC = () => {
                   required
                   value={pName}
                   onChange={(e) => setPName(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white"
                 />
               </div>
 
@@ -914,21 +1492,21 @@ export const AdminDashboard: React.FC = () => {
                     required
                     value={pSku}
                     onChange={(e) => setPSku(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">Category</label>
+                  <label className="block text-slate-300 font-medium mb-1">Category *</label>
                   <select
                     value={pCategory}
                     onChange={(e) => setPCategory(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white"
                   >
-                    <option value="Screens & Displays">Screens & Displays</option>
-                    <option value="Batteries">Batteries</option>
-                    <option value="Internal Parts">Internal Parts</option>
-                    <option value="Accessories">Accessories</option>
-                    <option value="Services & Care">Services & Care</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.name}>
+                        {c.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -995,15 +1573,78 @@ export const AdminDashboard: React.FC = () => {
                     setShowAddModal(false);
                     setEditingProduct(null);
                   }}
-                  className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300"
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold"
+                  className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-lg shadow-blue-600/30"
                 >
                   Save Product
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* -------------------------------------------------------------
+          ADD NEW CATEGORY MODAL
+         ------------------------------------------------------------- */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <FolderPlus className="w-4 h-4 text-blue-400" />
+                <span>Add New Category</span>
+              </h2>
+              <button
+                onClick={() => setShowCategoryModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddCategorySubmit} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">Category Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  placeholder="e.g. Smart Watches, Soldering Consumables, IC Chips..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">Description</label>
+                <textarea
+                  rows={3}
+                  value={newCatDesc}
+                  onChange={(e) => setNewCatDesc(e.target.value)}
+                  placeholder="Brief description of items in this category..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold"
+                >
+                  Save Category
                 </button>
               </div>
             </form>

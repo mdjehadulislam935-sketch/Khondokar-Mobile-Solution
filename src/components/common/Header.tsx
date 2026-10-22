@@ -86,8 +86,13 @@ export const Header: React.FC = () => {
           onClick={() => handleNav('home')}
           className="flex items-center gap-3 text-left focus:outline-none group whitespace-nowrap shrink-0"
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-700 to-sky-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/30 transition-shadow">
-            <Wrench className="w-5 h-5 text-white" />
+          <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-blue-500/40 bg-slate-900 shadow-lg shadow-blue-500/20 group-hover:border-blue-400 transition-all shrink-0">
+            <img
+              src="/src/assets/images/kms_tech_logo_1792672120996.jpg"
+              alt="M/S Khandokar Mobile Solution Logo"
+              referrerPolicy="no-referrer"
+              className="w-full h-full object-cover"
+            />
           </div>
           <div>
             <div className="font-bold text-base sm:text-lg tracking-tight text-white flex items-center gap-1.5">

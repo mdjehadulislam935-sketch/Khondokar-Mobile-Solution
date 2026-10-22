@@ -3,7 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Product, RepairService, Order, RepairBooking, CustomerUser } from '../types';
+import { Product, ProductCategory, RepairService, Order, RepairBooking, CustomerUser } from '../types';
+
+export const INITIAL_CATEGORIES: ProductCategory[] = [
+  { id: 'cat-1', name: 'Screens & Displays', description: 'Original OLED, AMOLED, and IPS LCD screen assemblies' },
+  { id: 'cat-2', name: 'Batteries', description: 'High-density fresh-cycle lithium batteries' },
+  { id: 'cat-3', name: 'Internal Parts', description: 'Charging docks, camera sensors, speakers, microphones' },
+  { id: 'cat-4', name: 'Accessories', description: 'GaN fast wall chargers, braided cables, cases, tempered glass' },
+  { id: 'cat-5', name: 'Services & Care', description: 'Diagnostic evaluations, ultrasonic maintenance, software' },
+];
 
 export const BUSINESS_INFO = {
   name: 'M/S Khandokar Mobile Solution',
