@@ -7,20 +7,21 @@ import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { PageView } from '../../types';
 import { BUSINESS_INFO } from '../../data/initialData';
+import { footerContent } from '../../translations';
 import {
-  Wrench,
   MapPin,
   Phone,
   Mail,
   Clock,
-  ExternalLink,
   Shield,
   MessageSquare,
   Lock,
 } from 'lucide-react';
 
 export const Footer: React.FC = () => {
-  const { navigate, setIsAdminMode } = useApp();
+  const { navigate, setIsAdminMode, lang } = useApp();
+
+  const fc = footerContent[lang] || footerContent['en'];
 
   const handleNav = (p: PageView) => {
     setIsAdminMode(false);
@@ -45,22 +46,25 @@ export const Footer: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-bold text-white text-base tracking-tight">
-                  M/S Khandokar Mobile Solution
+                  {lang === 'bn' ? 'মেসার্স খন্দকার মোবাইল সলিউশন' : 'M/S Khandokar Mobile Solution'}
                 </h3>
-                <p className="text-xs text-blue-400">Mobile Service Entrepreneur & Technician</p>
+                <p className="text-xs text-blue-400">{fc.tagline}</p>
               </div>
             </div>
 
             <p className="text-xs leading-relaxed text-slate-400">
-              Professional mobile phone repair, component-level micro-soldering, firmware
-              restoration, and genuine accessories in Feni, Bangladesh. Led by{' '}
-              <strong className="text-slate-200">{BUSINESS_INFO.proprietor}</strong>.
+              {fc.bio}{' '}
+              <strong className="text-slate-200">
+                {lang === 'bn' ? 'এমদাদ হোসেন তুহিন' : BUSINESS_INFO.proprietor}
+              </strong>.
             </p>
 
             <div className="pt-1 flex flex-col gap-1.5 text-xs text-slate-300">
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                <span>{BUSINESS_INFO.address}</span>
+                <span>
+                  {lang === 'bn' ? 'চেয়ারম্যান মার্কেট, আমজাদ হাট, ফুলগাজী, ফেনী' : BUSINESS_INFO.address}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-blue-400 shrink-0" />
@@ -84,94 +88,42 @@ export const Footer: React.FC = () => {
 
             <a
               href={`https://wa.me/8801885181199?text=${encodeURIComponent(
-                'Assalamu Alaikum! I would like to inquire about mobile servicing at M/S Khandokar Mobile Solution.'
+                lang === 'bn'
+                  ? 'আসসালামু আলাইকুম! মেসার্স খন্দকার মোবাইল সলিউশনে মোবাইল সার্ভিসিং বিষয়ে জানতে চাচ্ছি।'
+                  : 'Assalamu Alaikum! I would like to inquire about mobile servicing at M/S Khandokar Mobile Solution.'
               )}`}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 text-xs font-semibold transition-colors mt-2"
             >
               <MessageSquare className="w-3.5 h-3.5" />
-              <span>Direct WhatsApp Inquiry</span>
+              <span>{fc.directWhatsApp}</span>
             </a>
           </div>
 
           {/* Column 2: Repair Services */}
           <div>
             <h4 className="font-semibold text-white text-sm mb-4 tracking-wide">
-              Specialized Services
+              {fc.specializedServicesTitle}
             </h4>
             <ul className="space-y-2 text-xs">
-              <li>
-                <button
-                  onClick={() => handleNav('services')}
-                  className="hover:text-blue-400 transition-colors text-left"
-                >
-                  Motherboard & Micro-Soldering
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleNav('services')}
-                  className="hover:text-blue-400 transition-colors text-left"
-                >
-                  Display & Touch Digitizer Replacement
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleNav('services')}
-                  className="hover:text-blue-400 transition-colors text-left"
-                >
-                  High-Capacity Battery Replacement
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleNav('services')}
-                  className="hover:text-blue-400 transition-colors text-left"
-                >
-                  Water Damage Ultrasonic Restoration
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleNav('services')}
-                  className="hover:text-blue-400 transition-colors text-left"
-                >
-                  Dead Phone Electrical Diagnostics
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleNav('services')}
-                  className="hover:text-blue-400 transition-colors text-left"
-                >
-                  Official Firmware & Unbricking
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleNav('services')}
-                  className="hover:text-blue-400 transition-colors text-left"
-                >
-                  Charging Port & Sub-board Rebuild
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleNav('services')}
-                  className="hover:text-blue-400 transition-colors text-left"
-                >
-                  Network & Baseband IC Diagnostics
-                </button>
-              </li>
+              {fc.servicesList.map((serviceName, idx) => (
+                <li key={idx}>
+                  <button
+                    onClick={() => handleNav('services')}
+                    className="hover:text-blue-400 transition-colors text-left"
+                  >
+                    {serviceName}
+                  </button>
+                </li>
+              ))}
             </ul>
           </div>
 
           {/* Column 3: Quick Navigation & Customer Portal */}
           <div>
             <h4 className="font-semibold text-white text-sm mb-4 tracking-wide">
-              Customer Portal
+              {fc.customerPortalTitle}
             </h4>
             <ul className="space-y-2 text-xs">
               <li>
@@ -179,7 +131,7 @@ export const Footer: React.FC = () => {
                   onClick={() => handleNav('shop')}
                   className="hover:text-blue-400 transition-colors"
                 >
-                  Product Shop & Accessories
+                  {fc.portalLinks.shop}
                 </button>
               </li>
               <li>
@@ -187,7 +139,7 @@ export const Footer: React.FC = () => {
                   onClick={() => handleNav('booking')}
                   className="hover:text-blue-400 transition-colors"
                 >
-                  Online Repair Booking
+                  {fc.portalLinks.booking}
                 </button>
               </li>
               <li>
@@ -195,7 +147,7 @@ export const Footer: React.FC = () => {
                   onClick={() => handleNav('tracking')}
                   className="hover:text-blue-400 transition-colors text-blue-400 font-medium"
                 >
-                  Track Repair / Order Status
+                  {fc.portalLinks.tracking}
                 </button>
               </li>
               <li>
@@ -203,7 +155,7 @@ export const Footer: React.FC = () => {
                   onClick={() => handleNav('dashboard')}
                   className="hover:text-blue-400 transition-colors"
                 >
-                  Customer Account Dashboard
+                  {fc.portalLinks.dashboard}
                 </button>
               </li>
               <li>
@@ -211,7 +163,7 @@ export const Footer: React.FC = () => {
                   onClick={() => handleNav('login')}
                   className="hover:text-blue-400 transition-colors"
                 >
-                  Customer Login / Register
+                  {fc.portalLinks.login}
                 </button>
               </li>
               <li>
@@ -219,7 +171,7 @@ export const Footer: React.FC = () => {
                   onClick={() => handleNav('cart')}
                   className="hover:text-blue-400 transition-colors"
                 >
-                  Shopping Bag & Checkout
+                  {fc.portalLinks.cart}
                 </button>
               </li>
               <li>
@@ -227,7 +179,7 @@ export const Footer: React.FC = () => {
                   onClick={() => handleNav('about')}
                   className="hover:text-blue-400 transition-colors"
                 >
-                  About Technician Imdad Hossain
+                  {fc.portalLinks.about}
                 </button>
               </li>
             </ul>
@@ -236,29 +188,28 @@ export const Footer: React.FC = () => {
           {/* Column 4: Workshop Hours & Transparency */}
           <div>
             <h4 className="font-semibold text-white text-sm mb-4 tracking-wide">
-              Operating Hours & Trust
+              {fc.operatingHoursTitle}
             </h4>
             <div className="space-y-3 text-xs">
               <div className="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
                 <div className="flex items-center gap-2 text-slate-200 font-medium mb-1.5">
                   <Clock className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Workshop Hours</span>
+                  <span>{fc.hoursHeader}</span>
                 </div>
                 <p className="text-slate-400 text-[11px] leading-relaxed">
-                  Sat – Thu: 9:00 AM – 9:00 PM
+                  {fc.hoursTextSatThu}
                   <br />
-                  Friday: 2:30 PM – 9:00 PM (After Juma)
+                  {fc.hoursTextFri}
                 </p>
               </div>
 
               <div className="space-y-1.5 pt-1">
                 <div className="flex items-center gap-1.5 text-slate-300">
                   <Shield className="w-3.5 h-3.5 text-blue-400" />
-                  <span className="font-medium text-slate-200">Customer Data Privacy</span>
+                  <span className="font-medium text-slate-200">{fc.dataPrivacyTitle}</span>
                 </div>
                 <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Strict privacy protocol. Customer personal data, photos, and messages are never
-                  accessed or extracted during servicing.
+                  {fc.dataPrivacyText}
                 </p>
               </div>
 
@@ -268,7 +219,7 @@ export const Footer: React.FC = () => {
                   className="inline-flex items-center gap-1.5 text-slate-400 hover:text-blue-400 text-xs transition-colors"
                 >
                   <Lock className="w-3 h-3" />
-                  <span>Administrative Control Panel</span>
+                  <span>{fc.adminControl}</span>
                 </button>
               </div>
             </div>
@@ -280,31 +231,29 @@ export const Footer: React.FC = () => {
       <div className="border-t border-slate-800/60 bg-slate-900/50 py-3 px-4">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
           <p className="text-center sm:text-left">
-            <span className="text-blue-400 font-semibold">Demonstration Disclosure:</span>{' '}
-            Pre-populated products and prices are staged for demonstration and testing. Real repair
-            quotes and retail inventory are managed through the Admin Panel or confirmed at the
-            counter.
+            <span className="text-blue-400 font-semibold">{fc.demoDisclosureTitle}</span>{' '}
+            {fc.demoDisclosureText}
           </p>
           <div className="flex items-center gap-4 shrink-0 text-slate-400">
             <button
               onClick={() => handleNav('privacy')}
               className="hover:text-slate-200 transition-colors"
             >
-              Privacy Policy
+              {fc.privacyPolicy}
             </button>
             <span>·</span>
             <button
               onClick={() => handleNav('terms')}
               className="hover:text-slate-200 transition-colors"
             >
-              Terms of Service
+              {fc.termsOfService}
             </button>
             <span>·</span>
             <button
               onClick={() => handleNav('refund')}
               className="hover:text-slate-200 transition-colors"
             >
-              Return & Refund
+              {fc.refundPolicy}
             </button>
           </div>
         </div>
@@ -313,13 +262,8 @@ export const Footer: React.FC = () => {
       {/* Bottom Bar: Copyright and Location */}
       <div className="border-t border-slate-900 bg-black/60 py-4 px-4 text-center text-xs text-slate-400">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>
-            © 2026 M/S Khandokar Mobile Solution. All rights reserved. Chairman Market, Amjad Hat,
-            Ful-gazi, Feni, Bangladesh.
-          </span>
-          <span className="text-slate-400">
-            Founded January 2026 · Proprietor: Imdad Hossain Tuhin
-          </span>
+          <span>{fc.copyright}</span>
+          <span className="text-slate-400">{fc.founded}</span>
         </div>
       </div>
     </footer>

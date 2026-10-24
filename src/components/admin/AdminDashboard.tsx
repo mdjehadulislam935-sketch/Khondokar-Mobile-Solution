@@ -61,9 +61,11 @@ export const AdminDashboard: React.FC = () => {
     addCategory,
     deleteCategory,
     isAdminAuthenticated,
+    adminId,
     adminPassword,
     loginAdmin,
     logoutAdmin,
+    updateAdminCredentials,
     updateAdminPassword,
     bookings,
     updateBookingStatus,
@@ -71,9 +73,12 @@ export const AdminDashboard: React.FC = () => {
     updateOrderStatus,
     customers,
     showToast,
+    lang,
+    t,
   } = useApp();
 
-  // Admin Login States
+  // Admin Login States (Starts completely empty, zero auto-fill)
+  const [adminIdInput, setAdminIdInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
@@ -100,7 +105,8 @@ export const AdminDashboard: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Password change state in settings
+  // Credentials change state in settings
+  const [newAdminId, setNewAdminId] = useState('');
   const [newAdminPass, setNewAdminPass] = useState('');
   const [confirmAdminPass, setConfirmAdminPass] = useState('');
 
@@ -223,19 +229,35 @@ export const AdminDashboard: React.FC = () => {
 
   const handleAdminLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const ok = loginAdmin(passwordInput);
+    if (!adminIdInput.trim() || !passwordInput.trim()) {
+      showToast(lang === 'bn' ? 'অ্যাডমিন আইডি এবং পাসওয়ার্ড উভয়ই প্রয়োজন' : 'Both Admin ID and Password are required', 'error');
+      return;
+    }
+    const ok = loginAdmin(adminIdInput, passwordInput);
     if (ok) {
+      setAdminIdInput('');
       setPasswordInput('');
     }
   };
 
-  const handlePasswordChangeSubmit = (e: React.FormEvent) => {
+  const handleCredentialsChangeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newAdminPass !== confirmAdminPass) {
-      alert('New passwords do not match!');
+    const targetId = newAdminId.trim() || adminId;
+    if (!targetId) {
+      showToast(lang === 'bn' ? 'অ্যাডমিন আইডি খালি রাখা যাবে না' : 'Admin ID cannot be empty', 'error');
       return;
     }
-    updateAdminPassword(newAdminPass);
+    if (newAdminPass) {
+      if (newAdminPass !== confirmAdminPass) {
+        showToast(lang === 'bn' ? 'নতুন পাসওয়ার্ড মেলেনি!' : 'New passwords do not match!', 'error');
+        return;
+      }
+      if (newAdminPass.length < 4) {
+        showToast(lang === 'bn' ? 'পাসওয়ার্ড অন্তত ৪ অক্ষরের হতে হবে' : 'Password must be at least 4 characters', 'error');
+        return;
+      }
+    }
+    updateAdminCredentials(targetId, newAdminPass ? newAdminPass : adminPassword);
     setNewAdminPass('');
     setConfirmAdminPass('');
   };
@@ -259,30 +281,63 @@ export const AdminDashboard: React.FC = () => {
   // -------------------------------------------------------------
   if (!isAdminAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#070b14] text-slate-100 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 space-y-6 shadow-2xl relative">
-          {/* Logo and Title */}
+      <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden bg-slate-950 text-slate-100">
+        {/* High-Tech System Background Image & Cyber Overlays */}
+        <div className="absolute inset-0 z-0">
+          <img
+            src="/src/assets/images/admin_system_bg_1792858645788.jpg"
+            alt="System Infrastructure Control Center"
+            className="w-full h-full object-cover object-center filter brightness-[0.35] contrast-125 scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-slate-950/70 backdrop-blur-[2px]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cyan-600/10 via-transparent to-transparent pointer-events-none" />
+        </div>
+
+        {/* Floating Glassmorphic System Card */}
+        <div className="relative z-10 max-w-md w-full bg-slate-900/90 backdrop-blur-xl border border-cyan-500/30 rounded-3xl p-8 space-y-6 shadow-2xl shadow-cyan-950/60">
+          {/* Logo, Status Badge and Title */}
           <div className="text-center space-y-3">
-            <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-blue-500/50 shadow-xl shadow-blue-500/20 mx-auto">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-cyan-500/50 shadow-xl shadow-cyan-500/20 mx-auto">
               <img
                 src="/src/assets/images/kms_tech_logo_1792672120996.jpg"
                 alt="Khandokar Mobile Solution Logo"
                 className="w-full h-full object-cover"
               />
             </div>
+
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/30 text-cyan-400 text-[11px] font-mono">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              <span>{lang === 'bn' ? 'সিকিউর সিস্টেম পোর্টাল' : 'Secure System Portal'}</span>
+            </div>
+
             <div>
-              <h1 className="text-xl font-bold text-white tracking-tight">Admin Console Login</h1>
-              <p className="text-xs text-blue-400 font-medium">M/S Khandokar Mobile Solution</p>
+              <h1 className="text-xl font-bold text-white tracking-tight">{t('adminLoginTitle')}</h1>
+              <p className="text-xs text-cyan-400 font-medium">M/S Khandokar Mobile Solution</p>
             </div>
             <p className="text-xs text-slate-400">
-              Please enter the administrative password to access workshop operations, stock, and customer bookings.
+              {t('adminLoginSubtitle')}
             </p>
           </div>
 
           <form onSubmit={handleAdminLoginSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                Admin Password *
+                {t('adminIdLabel')}
+              </label>
+              <input
+                type="text"
+                required
+                value={adminIdInput}
+                onChange={(e) => setAdminIdInput(e.target.value)}
+                placeholder={t('adminIdPlaceholder')}
+                autoComplete="off"
+                className="w-full px-3.5 py-3 rounded-xl bg-slate-950/80 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-cyan-500 font-mono transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                {t('adminPassLabel')}
               </label>
               <div className="relative">
                 <input
@@ -290,8 +345,9 @@ export const AdminDashboard: React.FC = () => {
                   required
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
-                  placeholder="Enter admin password..."
-                  className="w-full pl-3.5 pr-10 py-3 rounded-xl bg-slate-950 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-blue-500 font-mono"
+                  placeholder={t('adminPassPlaceholder')}
+                  autoComplete="off"
+                  className="w-full pl-3.5 pr-10 py-3 rounded-xl bg-slate-950/80 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-cyan-500 font-mono transition-colors"
                 />
                 <button
                   type="button"
@@ -306,43 +362,22 @@ export const AdminDashboard: React.FC = () => {
 
             <button
               type="submit"
-              className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 active:scale-95"
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-xs shadow-lg shadow-cyan-600/30 transition-all flex items-center justify-center gap-2 active:scale-95"
             >
               <KeyRound className="w-4 h-4" />
-              <span>Unlock Admin Console</span>
+              <span>{t('unlockAdminBtn')}</span>
             </button>
           </form>
 
-          {/* Quick Default Password Helper for the User */}
-          <div className="p-4 rounded-xl bg-blue-950/30 border border-blue-900/50 text-xs text-slate-300 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-white">Default Admin Password:</span>
-              <button
-                type="button"
-                onClick={() => setPasswordInput(adminPassword)}
-                className="text-[11px] text-blue-400 hover:text-blue-300 font-mono underline"
-              >
-                Auto Fill
-              </button>
-            </div>
-            <div className="font-mono text-sm text-blue-400 bg-slate-950/80 px-2.5 py-1.5 rounded border border-slate-800 flex items-center justify-between">
-              <span>{adminPassword}</span>
-              <span className="text-[10px] text-slate-500 font-sans">Proprietor Access</span>
-            </div>
-            <p className="text-[11px] text-slate-400 leading-relaxed pt-1">
-              You can change this password at any time inside the <strong>Account & Security Settings</strong> tab.
-            </p>
-          </div>
-
-          <div className="text-center">
+          <div className="text-center pt-2 border-t border-slate-800/80">
             <button
               onClick={() => {
                 setIsAdminMode(false);
                 navigate('home');
               }}
-              className="text-xs text-slate-400 hover:text-white transition-colors"
+              className="text-xs text-slate-400 hover:text-cyan-400 transition-colors inline-flex items-center gap-1.5"
             >
-              ← Return to Public Website
+              ← {lang === 'bn' ? 'মূল ওয়েবসাইটে ফিরে যান' : 'Return to Public Website'}
             </button>
           </div>
         </div>
@@ -774,18 +809,24 @@ export const AdminDashboard: React.FC = () => {
                                   <span>Duplicate Item</span>
                                 </button>
 
-                                {!p.isArchived && (
-                                  <button
-                                    onClick={() => {
+                                <button
+                                  onClick={() => {
+                                    if (
+                                      window.confirm(
+                                        lang === 'bn'
+                                          ? 'আপনি কি নিশ্চিত যে এই প্রোডাক্টটি একবারে মুছে ফেলতে চান? এটি স্থায়ীভাবে ডিলিট হয়ে যাবে।'
+                                          : 'Are you sure you want to permanently delete this product? It will be completely removed.'
+                                      )
+                                    ) {
                                       deleteProduct(p.id);
                                       setActiveMenuId(null);
-                                    }}
-                                    className="w-full px-3.5 py-2 text-rose-400 hover:bg-rose-950/40 flex items-center gap-2 border-t border-slate-800"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                    <span>Archive / Soft Delete</span>
-                                  </button>
-                                )}
+                                    }
+                                  }}
+                                  className="w-full px-3.5 py-2 text-rose-400 hover:bg-rose-950/40 flex items-center gap-2 border-t border-slate-800 font-medium"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>{lang === 'bn' ? 'একবারে ডিলিট করুন' : 'Delete Permanently'}</span>
+                                </button>
                               </div>
                             )}
                           </td>
@@ -1307,44 +1348,75 @@ export const AdminDashboard: React.FC = () => {
                 Account & Security Settings
               </h1>
 
-              {/* Password Change Card */}
+              {/* Credentials Change Card */}
               <div className="p-6 rounded-2xl border border-blue-500/30 bg-slate-900/70 space-y-4">
                 <div className="flex items-center gap-2 text-white font-bold text-sm">
                   <KeyRound className="w-4 h-4 text-blue-400" />
-                  <span>Change Admin Access Password</span>
+                  <span>
+                    {lang === 'bn'
+                      ? 'অ্যাডমিন আইডি ও পাসওয়ার্ড পরিবর্তন'
+                      : 'Change Admin ID & Password'}
+                  </span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Update the proprietor administrative master password used to unlock this Admin Console.
+                  {lang === 'bn'
+                    ? 'প্রোপ্রাইটর অ্যাডমিন কনসোলে প্রবেশের জন্য অ্যাডমিন আইডি এবং মাস্টার পাসওয়ার্ড পরিবর্তন করুন।'
+                    : 'Update your proprietor Admin ID and Master Password used to unlock this Admin Console.'}
                 </p>
 
-                <form onSubmit={handlePasswordChangeSubmit} className="space-y-3 max-w-md text-xs">
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
+                  <span>{lang === 'bn' ? 'বর্তমান অ্যাডমিন আইডি:' : 'Current Admin ID:'}</span>
+                  <strong className="text-blue-400 font-mono text-sm">{adminId}</strong>
+                </div>
+
+                <form onSubmit={handleCredentialsChangeSubmit} className="space-y-4 max-w-md text-xs">
                   <div>
-                    <label className="block text-slate-300 mb-1">New Password *</label>
+                    <label className="block text-slate-300 mb-1 font-medium">
+                      {lang === 'bn' ? 'নতুন অ্যাডমিন আইডি (ঐচ্ছিক)' : 'New Admin ID (Optional)'}
+                    </label>
                     <input
-                      type="password"
-                      required
-                      value={newAdminPass}
-                      onChange={(e) => setNewAdminPass(e.target.value)}
-                      placeholder="Enter new admin password..."
+                      type="text"
+                      value={newAdminId}
+                      onChange={(e) => setNewAdminId(e.target.value)}
+                      placeholder={adminId}
+                      autoComplete="off"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-300 mb-1">Confirm New Password *</label>
+                    <label className="block text-slate-300 mb-1 font-medium">
+                      {lang === 'bn' ? 'নতুন পাসওয়ার্ড' : 'New Password'}
+                    </label>
                     <input
                       type="password"
-                      required
+                      value={newAdminPass}
+                      onChange={(e) => setNewAdminPass(e.target.value)}
+                      placeholder={lang === 'bn' ? 'নতুন পাসওয়ার্ড লিখুন...' : 'Enter new password...'}
+                      autoComplete="new-password"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-medium">
+                      {lang === 'bn' ? 'পাসওয়ার্ড নিশ্চিত করুন' : 'Confirm New Password'}
+                    </label>
+                    <input
+                      type="password"
                       value={confirmAdminPass}
                       onChange={(e) => setConfirmAdminPass(e.target.value)}
-                      placeholder="Re-type new password..."
+                      placeholder={lang === 'bn' ? 'পুনরায় পাসওয়ার্ড লিখুন...' : 'Re-type new password...'}
+                      autoComplete="new-password"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono"
                     />
                   </div>
                   <button
                     type="submit"
-                    className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-colors"
+                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-colors flex items-center gap-2 active:scale-95"
                   >
-                    Save New Password
+                    <Save className="w-4 h-4" />
+                    <span>
+                      {lang === 'bn' ? 'ক্রেডেনশিয়াল সংরক্ষণ করুন' : 'Save Admin Credentials'}
+                    </span>
                   </button>
                 </form>
               </div>

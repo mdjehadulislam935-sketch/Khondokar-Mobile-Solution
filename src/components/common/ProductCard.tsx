@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { Product } from '../../types';
 import { useApp } from '../../context/AppContext';
+import { getLocalizedCategory } from '../../translations';
 import { ShoppingBag, Eye, Smartphone } from 'lucide-react';
 
 interface ProductCardProps {
@@ -13,7 +14,7 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const { navigate, addToCart } = useApp();
+  const { navigate, addToCart, lang, t } = useApp();
   const [imgError, setImgError] = useState(false);
 
   const isDiscounted = product.discountPrice && product.discountPrice < product.price;
@@ -45,7 +46,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           {/* Demonstration Notice Watermark */}
           {product.isDemo && (
             <div className="absolute top-2.5 left-2.5 text-[10px] uppercase font-mono tracking-wider bg-slate-900/90 text-slate-300 px-2 py-0.5 rounded border border-slate-700/60">
-              Demo Item
+              {t('demoItem')}
             </div>
           )}
 
@@ -53,16 +54,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900/90 text-white text-xs font-semibold backdrop-blur-sm border border-slate-700">
               <Eye className="w-3.5 h-3.5" />
-              <span>View Specifications</span>
+              <span>{t('viewSpecifications')}</span>
             </span>
           </div>
         </div>
 
         {/* Content Container */}
         <div className="p-4 space-y-2">
-          {/* Unboxed Metadata (Zero-Pill Compliance) */}
+          {/* Unboxed Metadata */}
           <div className="flex items-center gap-2 text-xs text-slate-400">
-            <span>{product.category}</span>
+            <span>{getLocalizedCategory(product.category, lang)}</span>
             <span aria-hidden="true">·</span>
             <span className="font-mono text-[11px] text-slate-500">{product.sku}</span>
           </div>
@@ -78,7 +79,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           {/* Compatible Models Snippet */}
           {product.compatibleModels.length > 0 && (
             <p className="text-xs text-slate-400 line-clamp-1">
-              Supports: {product.compatibleModels.join(', ')}
+              {t('supports')}: {product.compatibleModels.join(', ')}
             </p>
           )}
         </div>
@@ -100,9 +101,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             </div>
             <div className="text-[11px] text-slate-500">
               {product.availability === 'in_stock' ? (
-                <span className="text-emerald-400 font-medium">In Stock ({product.stockQuantity})</span>
+                <span className="text-emerald-400 font-medium">
+                  {t('inStock')} ({product.stockQuantity})
+                </span>
               ) : (
-                <span className="text-amber-400 font-medium">Pre-Order Only</span>
+                <span className="text-amber-400 font-medium">{t('preOrder')}</span>
               )}
             </div>
           </div>
@@ -111,7 +114,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             onClick={() => addToCart(product, 1)}
             disabled={product.availability === 'out_of_stock'}
             className="p-2.5 rounded-lg bg-blue-600/90 text-white hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            title="Add to Cart"
+            title={t('addToCart')}
           >
             <ShoppingBag className="w-4 h-4" />
           </button>

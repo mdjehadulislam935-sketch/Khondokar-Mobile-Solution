@@ -112,6 +112,7 @@ export interface CustomerUser {
   name: string;
   phone: string;
   email: string;
+  password?: string;
   address: string;
   district: string;
   registeredAt: string;

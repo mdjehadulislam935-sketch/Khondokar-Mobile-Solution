@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { getLocalizedCategory } from '../../translations';
 import {
   ShoppingBag,
   ArrowLeft,
@@ -17,21 +18,25 @@ import {
 } from 'lucide-react';
 
 export const ProductDetailPage: React.FC = () => {
-  const { products, selectedProductId, addToCart, navigate } = useApp();
+  const { products, selectedProductId, addToCart, navigate, lang, t } = useApp();
   const [quantity, setQuantity] = useState<number>(1);
   const [imgError, setImgError] = useState(false);
+
+  const isBn = lang === 'bn';
 
   const product = products.find((p) => p.id === selectedProductId) || products[0];
 
   if (!product) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-        <p className="text-slate-400">Product not found.</p>
+        <p className="text-slate-400">
+          {isBn ? 'প্রোডাক্টটি পাওয়া যায়নি।' : 'Product not found.'}
+        </p>
         <button
           onClick={() => navigate('shop')}
           className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm"
         >
-          Return to Shop
+          {isBn ? 'শপে ফিরে যান' : 'Return to Shop'}
         </button>
       </div>
     );
@@ -55,11 +60,11 @@ export const ProductDetailPage: React.FC = () => {
           className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-blue-400 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Product Shop</span>
+          <span>{isBn ? '← প্রোডাক্ট শপে ফিরে যান' : 'Back to Product Shop'}</span>
         </button>
       </div>
 
-      {/* Contiguous PDP Split */}
+      {/* PDP Split */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* Left Column: Product Visual */}
         <div className="lg:col-span-6 space-y-4">
@@ -81,14 +86,14 @@ export const ProductDetailPage: React.FC = () => {
 
             {product.isDemo && (
               <div className="absolute top-4 left-4 bg-slate-900/90 text-slate-300 border border-slate-700/80 px-2.5 py-1 rounded text-xs font-mono uppercase tracking-wider">
-                Demonstration Item
+                {t('demoItem')}
               </div>
             )}
           </div>
 
           <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800 text-xs text-slate-400 flex items-center justify-between">
             <span>SKU: {product.sku}</span>
-            <span>Category: {product.category}</span>
+            <span>{t('category')}: {getLocalizedCategory(product.category, lang)}</span>
           </div>
         </div>
 
@@ -96,7 +101,7 @@ export const ProductDetailPage: React.FC = () => {
         <div className="lg:col-span-6 space-y-6">
           <div className="space-y-2">
             <div className="text-xs font-mono text-blue-400 font-semibold uppercase tracking-wider">
-              {product.category}
+              {getLocalizedCategory(product.category, lang)}
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               {product.name}
@@ -116,7 +121,7 @@ export const ProductDetailPage: React.FC = () => {
                     ৳{product.price.toLocaleString()}
                   </span>
                   <span className="text-xs font-semibold text-emerald-400">
-                    Save ৳{savings.toLocaleString()}
+                    {isBn ? `সাশ্রয় ৳${savings.toLocaleString()}` : `Save ৳${savings.toLocaleString()}`}
                   </span>
                 </>
               )}
@@ -130,17 +135,21 @@ export const ProductDetailPage: React.FC = () => {
                   }`}
                 />
                 <span className="text-slate-300 capitalize">
-                  {product.availability.replace('_', ' ')} ({product.stockQuantity} available)
+                  {product.availability === 'in_stock' ? `${t('inStock')} (${product.stockQuantity})` : t('preOrder')}
                 </span>
               </div>
               <span className="text-slate-600">·</span>
-              <span className="text-slate-400">Cash on Delivery Available</span>
+              <span className="text-slate-400">
+                {isBn ? 'ক্যাশ অন ডেলিভারি প্রযোজ্য' : 'Cash on Delivery Available'}
+              </span>
             </div>
 
             {/* Quantity and Actions */}
             <div className="pt-3 border-t border-slate-800 space-y-4">
               <div className="flex items-center gap-4">
-                <label className="text-xs font-medium text-slate-300">Quantity:</label>
+                <label className="text-xs font-medium text-slate-300">
+                  {isBn ? 'পরিমাণ:' : 'Quantity:'}
+                </label>
                 <div className="flex items-center border border-slate-700 rounded-lg bg-slate-950 overflow-hidden">
                   <button
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -168,7 +177,7 @@ export const ProductDetailPage: React.FC = () => {
                   className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs shadow-lg shadow-blue-600/25 transition-all flex items-center justify-center gap-2 active:scale-95"
                 >
                   <ShoppingBag className="w-4 h-4" />
-                  <span>Add to Cart</span>
+                  <span>{t('addToCart')}</span>
                 </button>
 
                 <button
@@ -176,21 +185,23 @@ export const ProductDetailPage: React.FC = () => {
                   className="w-full py-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 font-semibold text-xs transition-all flex items-center justify-center gap-2 active:scale-95"
                 >
                   <Sparkles className="w-4 h-4 text-blue-400" />
-                  <span>Instant Checkout</span>
+                  <span>{isBn ? 'এখনই চেকআউট করুন' : 'Instant Checkout'}</span>
                 </button>
               </div>
 
               {/* WhatsApp direct stock query */}
               <a
                 href={`https://wa.me/8801885181199?text=${encodeURIComponent(
-                  `Assalamu Alaikum! I would like to inquire about "${product.name}" (SKU: ${product.sku}) at M/S Khandokar Mobile Solution.`
+                  isBn
+                    ? `আসসালামু আলাইকুম! আমি মেসার্স খন্দকার মোবাইল সলিউশন থেকে "${product.name}" (SKU: ${product.sku}) সম্পর্কে জানতে চাচ্ছি।`
+                    : `Assalamu Alaikum! I would like to inquire about "${product.name}" (SKU: ${product.sku}) at M/S Khandokar Mobile Solution.`
                 )}`}
                 target="_blank"
                 rel="noreferrer"
                 className="w-full py-2.5 rounded-lg border border-emerald-500/30 bg-emerald-950/20 text-emerald-400 hover:bg-emerald-950/40 text-xs font-semibold transition-colors flex items-center justify-center gap-2"
               >
                 <MessageSquare className="w-3.5 h-3.5" />
-                <span>Confirm Compatibility via WhatsApp</span>
+                <span>{isBn ? 'হোয়াটসঅ্যাপে স্টক ও মডেল কনফার্ম করুন' : 'Confirm Compatibility via WhatsApp'}</span>
               </a>
             </div>
           </div>
@@ -199,11 +210,11 @@ export const ProductDetailPage: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-400">
             <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-800 flex items-center gap-2.5">
               <Truck className="w-4 h-4 text-blue-400 shrink-0" />
-              <span>Ful-gazi Workshop Pickup or Local Delivery</span>
+              <span>{isBn ? 'ফুলগাজী ওয়ার্কশপ পিকআপ বা ফেনীতে ডেলিভারি' : 'Ful-gazi Workshop Pickup or Local Delivery'}</span>
             </div>
             <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-800 flex items-center gap-2.5">
               <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Testing Guarantee & Quality Verification</span>
+              <span>{isBn ? 'টেস্টিং গ্যারান্টি ও কোয়ালিটি নিশ্চয়তা' : 'Testing Guarantee & Quality Verification'}</span>
             </div>
           </div>
         </div>
@@ -213,11 +224,14 @@ export const ProductDetailPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 border-t border-slate-800 pt-10">
         {/* Compatible Phone Models */}
         <div className="lg:col-span-6 space-y-4">
-          <h2 className="text-lg font-bold text-white">Compatible Phone Models</h2>
+          <h2 className="text-lg font-bold text-white">
+            {isBn ? 'সমর্থিত মোবাইল মডেলসমূহ' : 'Compatible Phone Models'}
+          </h2>
           <div className="p-5 rounded-2xl bg-slate-900/50 border border-slate-800 space-y-2">
             <p className="text-xs text-slate-400 leading-relaxed mb-3">
-              This component is engineered to match factory tolerances on the following smartphone
-              chassis:
+              {isBn
+                ? 'এই কম্পোনেন্টটি নিম্নলিখিত ফোন মডেলগুলোর সাথে সম্পূর্ণ উপযোগী:'
+                : 'This component is engineered to match factory tolerances on the following smartphone chassis:'}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {product.compatibleModels.map((model, i) => (
@@ -232,7 +246,9 @@ export const ProductDetailPage: React.FC = () => {
 
         {/* Technical Details Table */}
         <div className="lg:col-span-6 space-y-4">
-          <h2 className="text-lg font-bold text-white">Technical Specifications</h2>
+          <h2 className="text-lg font-bold text-white">
+            {isBn ? 'টেকনিক্যাল স্পেসিফিকেশন' : 'Technical Specifications'}
+          </h2>
           <div className="rounded-2xl border border-slate-800 bg-slate-900/50 overflow-hidden text-xs">
             {Object.entries(product.details).map(([key, val], idx) => (
               <div

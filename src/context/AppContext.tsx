@@ -25,6 +25,7 @@ import {
   INITIAL_ORDERS,
   INITIAL_CUSTOMERS,
 } from '../data/initialData';
+import { translations, Language } from '../translations';
 import {
   db,
   auth,
@@ -38,6 +39,7 @@ import {
   doc,
   setDoc,
   updateDoc,
+  deleteDoc,
   getDocs,
   onSnapshot,
 } from 'firebase/firestore';
@@ -50,6 +52,11 @@ interface ToastState {
 }
 
 interface AppContextType {
+  // Language & Translation
+  lang: Language;
+  setLang: (lang: Language) => void;
+  t: (key: keyof typeof translations['en']) => string;
+
   // Navigation
   page: PageView;
   navigate: (page: PageView, params?: { productId?: string; serviceId?: string }) => void;
@@ -95,7 +102,7 @@ interface AppContextType {
   // Customers & Auth
   customers: CustomerUser[];
   currentUser: CustomerUser | null;
-  loginUser: (phoneOrEmail: string) => boolean;
+  loginUser: (phoneOrEmail: string, password?: string) => boolean;
   loginWithGoogle: () => Promise<boolean>;
   logoutUser: () => void;
   registerUser: (customer: Omit<CustomerUser, 'id' | 'registeredAt'>) => CustomerUser;
@@ -104,11 +111,13 @@ interface AppContextType {
   addCategory: (name: string, description?: string) => void;
   deleteCategory: (id: string) => void;
 
-  // Admin Security & Password
+  // Admin Security & Credentials (imdad1190 / imdad@1190)
   isAdminAuthenticated: boolean;
+  adminId: string;
   adminPassword: string;
-  loginAdmin: (password: string) => boolean;
+  loginAdmin: (id: string, pass: string) => boolean;
   logoutAdmin: () => void;
+  updateAdminCredentials: (newId: string, newPass: string) => void;
   updateAdminPassword: (newPass: string) => void;
 
   // Cloud status
@@ -128,6 +137,26 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Language & Translation State
+  const [lang, setLangState] = useState<Language>(() => {
+    try {
+      return (localStorage.getItem('kms_lang') as Language) || 'en';
+    } catch {
+      return 'en';
+    }
+  });
+
+  const setLang = (newLang: Language) => {
+    setLangState(newLang);
+    try {
+      localStorage.setItem('kms_lang', newLang);
+    } catch {}
+  };
+
+  const t = (key: keyof typeof translations['en']): string => {
+    return translations[lang]?.[key] || translations['en']?.[key] || key;
+  };
+
   // Navigation State
   const [page, setPage] = useState<PageView>('home');
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
@@ -140,11 +169,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(false);
 
-  // Persistence Loaders
+  // Persistence Loaders (Permanent deletion filtered out via blacklist)
   const [products, setProducts] = useState<Product[]>(() => {
     try {
+      const deletedIds: string[] = JSON.parse(localStorage.getItem('kms_deleted_product_ids') || '[]');
       const saved = localStorage.getItem('kms_products');
-      return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+      const base: Product[] = saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+      return base.filter((p) => !deletedIds.includes(p.id) && !p.isArchived);
     } catch {
       return INITIAL_PRODUCTS;
     }
@@ -207,7 +238,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
-  // Admin Security Password State
+  // Admin Security Credentials (Default: imdad1190 & imdad@1190)
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
     try {
       return sessionStorage.getItem('kms_admin_auth') === 'true';
@@ -216,11 +247,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
+  const [adminId, setAdminIdState] = useState<string>(() => {
+    try {
+      return localStorage.getItem('kms_admin_id') || 'imdad1190';
+    } catch {
+      return 'imdad1190';
+    }
+  });
+
   const [adminPassword, setAdminPasswordState] = useState<string>(() => {
     try {
-      return localStorage.getItem('kms_admin_password') || 'KMS@2026!';
+      return localStorage.getItem('kms_admin_password') || 'imdad@1190';
     } catch {
-      return 'KMS@2026!';
+      return 'imdad@1190';
     }
   });
 
@@ -402,16 +441,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteProduct = (id: string) => {
-    // Soft delete to protect historical order records
-    setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, isArchived: true, availability: 'out_of_stock' } : p))
-    );
+    // 1. Permanently remove from products state
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+
+    // 2. Remove from cart if item is currently in cart
+    setCart((prev) => prev.filter((item) => item.product.id !== id));
+
+    // 3. Save to deleted IDs blacklist so initial seed never reinstates it
     try {
-      updateDoc(doc(db, 'products', id), { isArchived: true, availability: 'out_of_stock' });
-    } catch (err) {
-      console.warn('Archived locally');
+      const deletedIds: string[] = JSON.parse(
+        localStorage.getItem('kms_deleted_product_ids') || '[]'
+      );
+      if (!deletedIds.includes(id)) {
+        deletedIds.push(id);
+        localStorage.setItem('kms_deleted_product_ids', JSON.stringify(deletedIds));
+      }
+    } catch (e) {
+      console.warn('Error saving deleted ID:', e);
     }
-    showToast('Product archived (order history preserved)', 'info');
+
+    // 4. Delete document from Firestore cloud collection
+    try {
+      deleteDoc(doc(db, 'products', id)).catch(() => {});
+    } catch (err) {
+      console.warn('Deleted locally:', err);
+    }
+
+    showToast(
+      lang === 'bn' ? 'প্রোডাক্টটি সফলভাবে একবারে ডিলিট করা হয়েছে।' : 'Product permanently deleted.',
+      'info'
+    );
   };
 
   // Cart Actions
@@ -551,30 +610,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Booking status updated to ${status.replace('_', ' ')}`, 'success');
   };
 
-  // Customer Auth (Local + Google Cloud Auth)
-  const loginUser = (phoneOrEmail: string): boolean => {
-    const trimmed = phoneOrEmail.trim().toLowerCase();
-    const found = customers.find(
-      (c) => c.phone.toLowerCase() === trimmed || c.email.toLowerCase() === trimmed
-    );
+  // Customer Auth (Mobile Number + Password verification)
+  const loginUser = (phoneOrEmail: string, password?: string): boolean => {
+    const cleanInput = phoneOrEmail.trim().replace(/\s+/g, '');
+    if (!cleanInput) {
+      showToast(lang === 'bn' ? 'মোবাইল নম্বর লিখুন' : 'Please enter your mobile number', 'error');
+      return false;
+    }
+
+    const found = customers.find((c) => {
+      const cleanPhone = (c.phone || '').trim().replace(/\s+/g, '');
+      const phoneMatches =
+        cleanPhone === cleanInput ||
+        cleanPhone.endsWith(cleanInput) ||
+        cleanInput.endsWith(cleanPhone);
+      const emailMatches =
+        Boolean(c.email) && c.email.toLowerCase() === phoneOrEmail.trim().toLowerCase();
+      return phoneMatches || emailMatches;
+    });
+
     if (found) {
+      if (password !== undefined && found.password && found.password !== password.trim()) {
+        showToast(
+          lang === 'bn' ? 'ভুল পাসওয়ার্ড! আবার চেষ্টা করুন।' : 'Incorrect password. Please try again.',
+          'error'
+        );
+        return false;
+      }
       setCurrentUser(found);
-      showToast(`Welcome back, ${found.name}!`, 'success');
+      showToast(
+        lang === 'bn' ? `স্বাগতম, ${found.name}!` : `Welcome back, ${found.name}!`,
+        'success'
+      );
       return true;
     }
-    const newSessionUser: CustomerUser = {
-      id: `cust-${Date.now()}`,
-      name: phoneOrEmail.includes('@') ? phoneOrEmail.split('@')[0] : 'Demo Customer',
-      phone: phoneOrEmail.includes('@') ? '+8801885181199' : phoneOrEmail,
-      email: phoneOrEmail.includes('@') ? phoneOrEmail : 'customer@khandokar.com',
-      address: 'Chairman Market, Ful-gazi',
-      district: 'Feni',
-      registeredAt: new Date().toISOString(),
-    };
-    setCurrentUser(newSessionUser);
-    setCustomers((prev) => [newSessionUser, ...prev]);
-    showToast(`Signed in as: ${newSessionUser.name}`, 'info');
-    return true;
+
+    showToast(
+      lang === 'bn'
+        ? 'এই মোবাইল নম্বরে কোনো অ্যাকাউন্ট নেই। অনুগ্রহ করে রেজিস্টার করুন।'
+        : 'No customer account found with this phone. Please register first.',
+      'error'
+    );
+    return false;
   };
 
   const loginWithGoogle = async (): Promise<boolean> => {
@@ -584,18 +661,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const newUser: CustomerUser = {
         id: user.uid,
         name: user.displayName || 'Google User',
-        phone: user.phoneNumber || '+8801885181199',
+        phone: user.phoneNumber || '',
         email: user.email || 'customer@gmail.com',
         address: 'Ful-gazi Workshop Area',
         district: 'Feni',
         registeredAt: new Date().toISOString(),
       };
       setCurrentUser(newUser);
-      showToast(`Signed in with Google as ${newUser.name}!`, 'success');
+      showToast(
+        lang === 'bn'
+          ? `গুগল দিয়ে সাইন ইন সফল হয়েছে, ${newUser.name}!`
+          : `Signed in with Google as ${newUser.name}!`,
+        'success'
+      );
       return true;
     } catch (err: any) {
       console.error('Google Sign In error:', err);
-      showToast('Google sign-in completed or cancelled', 'info');
+      showToast(
+        lang === 'bn' ? 'গুগল সাইন-ইন বাতিল বা সম্পন্ন হয়নি' : 'Google sign-in completed or cancelled',
+        'info'
+      );
       return false;
     }
   };
@@ -607,32 +692,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id,
       registeredAt: new Date().toISOString(),
     };
-    setCustomers((prev) => [newUser, ...prev]);
+    setCustomers((prev) => [newUser, ...prev.filter((c) => c.phone !== data.phone)]);
     setCurrentUser(newUser);
 
     setDoc(doc(db, 'customers', id), newUser).catch((err) => {
-      console.warn('Customer registered locally');
+      console.warn('Customer registered locally:', err);
     });
 
-    showToast(`Account registered for ${newUser.name}`, 'success');
+    showToast(
+      lang === 'bn'
+        ? `রেজিস্ট্রেশন সম্পন্ন হয়েছে! স্বাগতম ${newUser.name}`
+        : `Account registered successfully for ${newUser.name}!`,
+      'success'
+    );
     return newUser;
   };
 
   const logoutUser = () => {
     signOut(auth).catch(() => {});
     setCurrentUser(null);
-    showToast('Signed out successfully', 'info');
+    showToast(lang === 'bn' ? 'লগআউট সফল হয়েছে' : 'Signed out successfully', 'info');
   };
 
   // Category Actions
   const addCategory = (name: string, description?: string) => {
     const trimmed = name.trim();
     if (!trimmed) {
-      showToast('Category name cannot be empty', 'error');
+      showToast(lang === 'bn' ? 'ক্যাটাগরির নাম খালি রাখা যাবে না' : 'Category name cannot be empty', 'error');
       return;
     }
     if (categories.some((c) => c.name.toLowerCase() === trimmed.toLowerCase())) {
-      showToast('Category already exists', 'error');
+      showToast(lang === 'bn' ? 'ক্যাটাগরিটি ইতিমধ্যে রয়েছে' : 'Category already exists', 'error');
       return;
     }
     const newCat: ProductCategory = {
@@ -641,48 +731,84 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       description: description?.trim() || 'Custom smartphone accessory and parts category',
     };
     setCategories((prev) => [...prev, newCat]);
-    showToast(`Added new category "${trimmed}"`, 'success');
+    showToast(
+      lang === 'bn' ? `নতুন ক্যাটাগরি "${trimmed}" যুক্ত হয়েছে` : `Added new category "${trimmed}"`,
+      'success'
+    );
   };
 
   const deleteCategory = (id: string) => {
     const target = categories.find((c) => c.id === id);
     if (!target) return;
     setCategories((prev) => prev.filter((c) => c.id !== id));
-    showToast(`Removed category "${target.name}"`, 'info');
+    showToast(
+      lang === 'bn' ? `ক্যাটাগরি "${target.name}" মুছে ফেলা হয়েছে` : `Removed category "${target.name}"`,
+      'info'
+    );
   };
 
-  // Admin Authentication Actions
-  const loginAdmin = (passwordAttempt: string): boolean => {
-    if (passwordAttempt.trim() === adminPassword) {
+  // Admin Authentication Actions (ID: imdad1190 & Password: imdad@1190)
+  const loginAdmin = (idAttempt: string, passwordAttempt: string): boolean => {
+    if (
+      idAttempt.trim() === adminId.trim() &&
+      passwordAttempt.trim() === adminPassword.trim()
+    ) {
       setIsAdminAuthenticated(true);
       sessionStorage.setItem('kms_admin_auth', 'true');
-      showToast('Welcome to Admin Portal, Proprietor!', 'success');
+      showToast(
+        lang === 'bn' ? 'অ্যাডমিন প্যানেলে স্বাগতম, প্রোপ্রাইটর!' : 'Welcome to Admin Portal, Proprietor!',
+        'success'
+      );
       return true;
     }
-    showToast('Invalid admin password. Please try again.', 'error');
+    showToast(
+      lang === 'bn'
+        ? 'ভুল অ্যাডমিন আইডি বা পাসওয়ার্ড! অনুগ্রহ করে আবার চেষ্টা করুন।'
+        : 'Invalid Admin ID or Password. Please try again.',
+      'error'
+    );
     return false;
   };
 
   const logoutAdmin = () => {
     setIsAdminAuthenticated(false);
     sessionStorage.removeItem('kms_admin_auth');
-    showToast('Logged out of Admin Console', 'info');
+    showToast(lang === 'bn' ? 'অ্যাডমিন কনসোল থেকে লগআউট সম্পন্ন' : 'Logged out of Admin Console', 'info');
+  };
+
+  const updateAdminCredentials = (newId: string, newPass: string) => {
+    const trimmedId = newId.trim();
+    const trimmedPass = newPass.trim();
+    if (!trimmedId) {
+      showToast(lang === 'bn' ? 'অ্যাডমিন আইডি খালি রাখা যাবে না' : 'Admin ID cannot be empty', 'error');
+      return;
+    }
+    if (trimmedPass.length < 4) {
+      showToast(lang === 'bn' ? 'পাসওয়ার্ড অন্তত ৪ অক্ষরের হতে হবে' : 'Password must be at least 4 characters', 'error');
+      return;
+    }
+    setAdminIdState(trimmedId);
+    setAdminPasswordState(trimmedPass);
+    localStorage.setItem('kms_admin_id', trimmedId);
+    localStorage.setItem('kms_admin_password', trimmedPass);
+    showToast(
+      lang === 'bn'
+        ? 'অ্যাডমিন আইডি ও পাসওয়ার্ড সফলভাবে আপডেট করা হয়েছে!'
+        : 'Admin ID & Password updated successfully!',
+      'success'
+    );
   };
 
   const updateAdminPassword = (newPass: string) => {
-    const trimmed = newPass.trim();
-    if (trimmed.length < 4) {
-      showToast('Password must be at least 4 characters', 'error');
-      return;
-    }
-    setAdminPasswordState(trimmed);
-    localStorage.setItem('kms_admin_password', trimmed);
-    showToast('Admin password changed successfully!', 'success');
+    updateAdminCredentials(adminId, newPass);
   };
 
   return (
     <AppContext.Provider
       value={{
+        lang,
+        setLang,
+        t,
         page,
         navigate,
         isAdminMode,
@@ -701,9 +827,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addCategory,
         deleteCategory,
         isAdminAuthenticated,
+        adminId,
         adminPassword,
         loginAdmin,
         logoutAdmin,
+        updateAdminCredentials,
         updateAdminPassword,
         services,
         cart,

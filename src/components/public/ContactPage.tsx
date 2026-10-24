@@ -14,24 +14,28 @@ import {
   MessageSquare,
   Send,
   CheckCircle2,
-  Navigation,
 } from 'lucide-react';
 
 export const ContactPage: React.FC = () => {
-  const { showToast } = useApp();
+  const { showToast, lang, t } = useApp();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
+  const isBn = lang === 'bn';
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !phone.trim() || !message.trim()) {
-      alert('Please fill in your name, contact phone, and message.');
+      alert(isBn ? 'অনুগ্রহ করে আপনার নাম, মোবাইল নম্বর এবং বার্তা লিখুন।' : 'Please fill in your name, contact phone, and message.');
       return;
     }
     setSubmitted(true);
-    showToast('Your inquiry has been sent to our Ful-gazi technician desk!', 'success');
+    showToast(
+      isBn ? 'আপনার বার্তাটি সফলভাবে আমাদের ফুলগাজী টেকনিশিয়ান ডেস্কে পাঠানো হয়েছে!' : 'Your inquiry has been sent to our Ful-gazi technician desk!',
+      'success'
+    );
   };
 
   return (
@@ -39,14 +43,15 @@ export const ContactPage: React.FC = () => {
       {/* Header */}
       <div className="border-b border-slate-800 pb-8 space-y-3">
         <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider">
-          Direct Technical Advisory & Support
+          {isBn ? 'সরাসরি কারিগরি পরামর্শ ও যোগাযোগ' : 'Direct Technical Advisory & Support'}
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-          Contact M/S Khandokar Mobile Solution
+          {isBn ? 'মেসার্স খন্দকার মোবাইল সলিউশন-এ যোগাযোগ' : 'Contact M/S Khandokar Mobile Solution'}
         </h1>
         <p className="text-base text-slate-300 max-w-3xl leading-relaxed">
-          Whether you need a quick repair estimate, want to verify stock of replacement displays,
-          or require emergency hardware diagnostics, we are ready to assist.
+          {isBn
+            ? 'আপনার ডিভাইসের সম্ভাব্য মেরামতের খরচ জানতে, পার্টস স্টকে আছে কিনা নিশ্চিত হতে বা যেকোনো কারিগরি সহায়তায় আমাদের সাথে যোগাযোগ করুন।'
+            : 'Whether you need a quick repair estimate, want to verify stock of replacement displays, or require emergency hardware diagnostics, we are ready to assist.'}
         </p>
       </div>
 
@@ -54,16 +59,22 @@ export const ContactPage: React.FC = () => {
         {/* Left Column: Contact Cards & Location Info */}
         <div className="lg:col-span-5 space-y-6">
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-5">
-            <h2 className="text-lg font-bold text-white">Workshop & Contact Details</h2>
+            <h2 className="text-lg font-bold text-white">
+              {isBn ? 'ওয়ার্কশপ ও যোগাযোগের ঠিকানা' : 'Workshop & Contact Details'}
+            </h2>
 
             <div className="space-y-4 text-xs">
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
                 <div>
-                  <div className="font-semibold text-white">Physical Workshop Address</div>
-                  <div className="text-slate-300 mt-0.5">{BUSINESS_INFO.address}</div>
+                  <div className="font-semibold text-white">
+                    {isBn ? 'সরাসরি ওয়ার্কশপ ঠিকানা' : 'Physical Workshop Address'}
+                  </div>
+                  <div className="text-slate-300 mt-0.5">
+                    {isBn ? 'চেয়ারম্যান মার্কেট, আমজাদ হাট, ফুলগাজী, ফেনী' : BUSINESS_INFO.address}
+                  </div>
                   <div className="text-slate-500 text-[11px] mt-0.5">
-                    District: {BUSINESS_INFO.district}, Division: {BUSINESS_INFO.division}
+                    {isBn ? 'জেলা: ফেনী, বিভাগ: চট্টগ্রাম' : `District: ${BUSINESS_INFO.district}, Division: ${BUSINESS_INFO.division}`}
                   </div>
                 </div>
               </div>
@@ -71,21 +82,27 @@ export const ContactPage: React.FC = () => {
               <div className="flex items-start gap-3">
                 <Phone className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
                 <div>
-                  <div className="font-semibold text-white">Direct Mobile Line</div>
+                  <div className="font-semibold text-white">
+                    {isBn ? 'সরাসরি মোবাইল নম্বর' : 'Direct Mobile Line'}
+                  </div>
                   <a
                     href={`tel:${BUSINESS_INFO.phoneRaw}`}
                     className="text-slate-200 hover:text-blue-400 font-mono text-sm block mt-0.5"
                   >
                     {BUSINESS_INFO.phone}
                   </a>
-                  <div className="text-slate-500 text-[11px]">Calls & SMS welcome</div>
+                  <div className="text-slate-500 text-[11px]">
+                    {isBn ? 'কল ও এসএমএস স্বাগতম' : 'Calls & SMS welcome'}
+                  </div>
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
                 <Mail className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
                 <div>
-                  <div className="font-semibold text-white">Email Address</div>
+                  <div className="font-semibold text-white">
+                    {isBn ? 'ইমেইল অ্যাড্রেস' : 'Email Address'}
+                  </div>
                   <a
                     href={`mailto:${BUSINESS_INFO.email}`}
                     className="text-slate-200 hover:text-blue-400 block mt-0.5"
@@ -98,125 +115,128 @@ export const ContactPage: React.FC = () => {
               <div className="flex items-start gap-3">
                 <Clock className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
                 <div>
-                  <div className="font-semibold text-white">Operating Hours</div>
-                  <div className="text-slate-300 mt-0.5">{BUSINESS_INFO.openingHours}</div>
+                  <div className="font-semibold text-white">
+                    {isBn ? 'ওয়ার্কশপের সময়সূচি' : 'Operating Hours'}
+                  </div>
+                  <div className="text-slate-300 mt-0.5">
+                    {isBn ? 'শনিবার – বৃহস্পতিবার: সকাল ৯:০০ – রাত ৯:০০' : 'Sat – Thu: 9:00 AM – 9:00 PM'}
+                  </div>
+                  <div className="text-slate-400 text-[11px]">
+                    {isBn ? 'শুক্রবার: দুপুর ২:৩০ – রাত ৯:০০ (জুমার পর)' : 'Friday: 2:30 PM – 9:00 PM (After Juma)'}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 border-t border-slate-800">
               <a
                 href={`https://wa.me/8801885181199?text=${encodeURIComponent(
-                  'Assalamu Alaikum! I would like to inquire about mobile servicing at M/S Khandokar Mobile Solution.'
+                  isBn
+                    ? 'আসসালামু আলাইকুম! মেসার্স খন্দকার মোবাইল সলিউশনে সার্ভিসিং সম্পর্কে জানতে চাই।'
+                    : 'Assalamu Alaikum! I would like to inquire about mobile servicing at M/S Khandokar Mobile Solution.'
                 )}`}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-lg shadow-emerald-600/25 transition-all flex items-center justify-center gap-2"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-lg shadow-emerald-600/25 transition-all"
               >
                 <MessageSquare className="w-4 h-4" />
-                <span>Chat Instantly via WhatsApp (+88 01885-181199)</span>
+                <span>{t('directWhatsApp')}</span>
               </a>
             </div>
           </div>
-
-          {/* Location Visual Aid */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-3">
-            <div className="flex items-center gap-2 text-white font-semibold text-sm">
-              <Navigation className="w-4 h-4 text-blue-400" />
-              <span>How to Reach Our Workshop</span>
-            </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Located directly at <strong className="text-white">Chairman Market</strong> in{' '}
-              <strong className="text-white">Amjad Hat Bazar</strong>, along the main road
-              connecting Ful-gazi and Parshuram in Feni. Easy access by CNG, auto-rickshaw, or
-              motorcycle with parking available in front of the market.
-            </p>
-          </div>
         </div>
 
-        {/* Right Column: Interactive Inquiry Form */}
+        {/* Right Column: Direct Inquiry Message Form */}
         <div className="lg:col-span-7">
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 sm:p-8 space-y-6">
             <div className="space-y-1">
-              <h2 className="text-xl font-bold text-white">Send Us a Direct Message</h2>
+              <h2 className="text-xl font-bold text-white">
+                {isBn ? 'টেকনিশিয়ান ডেস্কে সরাসরি বার্তা পাঠান' : 'Send a Direct Inquiry to the Technician Desk'}
+              </h2>
               <p className="text-xs text-slate-400">
-                Have a technical question about your phone or a specific part? Send your inquiry
-                directly to technician Imdad Hossain Tuhin.
+                {isBn
+                  ? 'আপনার সমস্যা বা প্রশ্নের বিবরণ দিন। আমরা দ্রুততম সময়ে আপনার সাথে যোগাযোগ করব।'
+                  : 'Submit your query or describe your phone issue. We will respond promptly.'}
               </p>
             </div>
 
             {!submitted ? (
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                      Your Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. Shahidul Islam"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+88 01885-181199"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                    {t('fullNameLabel')}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={t('fullNamePlaceholder')}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                    Your Question or Problem Description *
+                    {t('phoneLabel')}
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder={t('phonePlaceholder')}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                    {isBn ? 'আপনার বার্তা বা ডিভাইসের সমস্যার বিবরণ *' : 'Your Message / Inquiry Details *'}
                   </label>
                   <textarea
                     rows={4}
                     required
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Describe your phone model, current issue, or parts inquiry..."
+                    placeholder={
+                      isBn
+                        ? 'আপনার মোবাইল মডেল ও সমস্যার বিবরণ লিখুন (যেমন: স্যামসাং A52 ওলেড ডিসপ্লে পরিবর্তন বা ডেড ফোন ডায়াগনস্টিক)...'
+                        : 'Describe your device model and problem (e.g., Samsung A52 screen replacement price, Xiaomi charging IC check)...'
+                    }
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full sm:w-auto px-7 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 active:scale-95"
+                  className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Send Inquiry</span>
+                  <Send className="w-4 h-4" />
+                  <span>{isBn ? 'বার্তা প্রেরণ করুন' : 'Send Message'}</span>
                 </button>
               </form>
             ) : (
-              <div className="p-6 rounded-xl border border-emerald-500/40 bg-slate-950 text-center space-y-3 animate-fade-in">
-                <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
-                <h3 className="text-base font-bold text-white">Inquiry Received!</h3>
+              <div className="p-8 rounded-xl bg-slate-950 border border-slate-800 text-center space-y-4">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/40">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-white">
+                  {isBn ? 'বার্তাটি সফলভাবে পাঠানো হয়েছে!' : 'Message Received!'}
+                </h3>
                 <p className="text-xs text-slate-300 max-w-sm mx-auto">
-                  Thank you, {name}. Technician Imdad Hossain will review your query and contact
-                  you at {phone} shortly.
+                  {isBn
+                    ? 'ধন্যবাদ! টেকনিশিয়ান এমদাদ হোসেন আপনার বার্তাটি পর্যালোচনা করে শীঘ্রই আপনার নম্বরে যোগাযোগ করবেন।'
+                    : 'Thank you for reaching out. Technician Imdad Hossain will review your note and contact you shortly.'}
                 </p>
                 <button
                   onClick={() => {
                     setSubmitted(false);
-                    setName('');
-                    setPhone('');
                     setMessage('');
                   }}
-                  className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors"
+                  className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition-colors"
                 >
-                  Send Another Message
+                  {isBn ? 'আরেকটি বার্তা পাঠান' : 'Send Another Inquiry'}
                 </button>
               </div>
             )}

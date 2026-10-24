@@ -6,10 +6,20 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { ProductCard } from '../common/ProductCard';
-import { Search, SlidersHorizontal, Info, ShoppingBag, X, Check } from 'lucide-react';
+import { getLocalizedCategory } from '../../translations';
+import { Search, SlidersHorizontal, Info, X } from 'lucide-react';
 
 export const ShopPage: React.FC = () => {
-  const { products, categories: appCategories, selectedCategory, setSelectedCategory, searchQuery, setSearchQuery } = useApp();
+  const {
+    products,
+    categories: appCategories,
+    selectedCategory,
+    setSelectedCategory,
+    searchQuery,
+    setSearchQuery,
+    lang,
+    t,
+  } = useApp();
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc'>('featured');
 
   const categories = useMemo(() => ['All', ...appCategories.map((c) => c.name)], [appCategories]);
@@ -31,13 +41,9 @@ export const ShopPage: React.FC = () => {
         if (!query) return true;
 
         // Real-time search matching:
-        // 1. Matches product name
         const matchesName = p.name.toLowerCase().includes(query);
-        // 2. Matches product category
         const matchesCategory = p.category.toLowerCase().includes(query);
-        // 3. Matches SKU
         const matchesSku = p.sku.toLowerCase().includes(query);
-        // 4. Matches compatible models
         const matchesModels = p.compatibleModels.some((m) =>
           m.toLowerCase().includes(query)
         );
@@ -65,7 +71,7 @@ export const ShopPage: React.FC = () => {
     return counts;
   }, [products]);
 
-  const activeDemoCount = products.filter((p) => !p.isArchived).length;
+  const activeCount = products.filter((p) => !p.isArchived).length;
   const isFiltered = searchQuery.trim() !== '' || selectedCategory !== 'All';
 
   const clearAllFilters = () => {
@@ -78,14 +84,15 @@ export const ShopPage: React.FC = () => {
       {/* Header & Catalog Disclosure */}
       <div className="border-b border-slate-800 pb-8 space-y-3">
         <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider">
-          Genuine Replacement Parts & Phone Accessories
+          {lang === 'bn' ? 'আসল রিপ্লেসমেন্ট পার্টস ও মোবাইল এক্সেসরিজ' : 'Genuine Replacement Parts & Phone Accessories'}
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-          Product & Parts Shop
+          {lang === 'bn' ? 'প্রোডাক্ট ও পার্টস শপ' : 'Product & Parts Shop'}
         </h1>
         <p className="text-base text-slate-300 max-w-3xl leading-relaxed">
-          Browse replacement hardware components, charging cables, adapters, tempered glass, and
-          phone care accessories available for customer pickup or local delivery in Feni.
+          {lang === 'bn'
+            ? 'উন্নত হার্ডওয়্যার পার্টস, চার্জার ক্যাবল, অ্যাডাপ্টার, গ্লাস প্রটেক্টর ও এক্সেসরিজ সরাসরি ফুলগাজী ওয়ার্কশপ থেকে বা ফেনীতে ডেলিভারি নিতে অর্ডার করুন।'
+            : 'Browse replacement hardware components, charging cables, adapters, tempered glass, and phone care accessories available for customer pickup or local delivery in Feni.'}
         </p>
 
         {/* Clear Demonstration Notice */}
@@ -93,9 +100,12 @@ export const ShopPage: React.FC = () => {
           <div className="flex items-start gap-2.5 p-3 rounded-xl bg-blue-950/40 border border-blue-800/40 text-xs text-blue-200">
             <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
             <p className="leading-relaxed">
-              <strong className="text-white">Demonstration Catalog Mode:</strong> These initial 12
-              products represent live demonstrative catalog data. Authorized store administrators can
-              update stock, add models, or modify prices inside the Admin Panel.
+              <strong className="text-white">
+                {lang === 'bn' ? 'ডেমোনস্ট্রেশন ক্যাটালগ মোড:' : 'Demonstration Catalog Mode:'}
+              </strong>{' '}
+              {lang === 'bn'
+                ? 'এখানে প্রদর্শিত পণ্যসমূহ প্রাথমিক ক্যাটালগ ডাটা। অনুমোদিত অ্যাডমিন প্যানেলের মাধ্যমে নতুন স্টক যুক্ত বা মূল্য পরিবর্তন করা যায়।'
+                : 'These initial products represent live demonstrative catalog data. Authorized store administrators can update stock, add models, or modify prices inside the Admin Panel.'}
             </p>
           </div>
         </div>
@@ -107,7 +117,7 @@ export const ShopPage: React.FC = () => {
           {/* Main Real-Time Product Search Bar */}
           <div className="relative flex-1">
             <label htmlFor="product-search-input" className="sr-only">
-              Search products by name or category
+              {t('searchPlaceholder')}
             </label>
             <Search className="w-4 h-4 text-blue-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
@@ -115,7 +125,7 @@ export const ShopPage: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search products by name, category (e.g. Display, Battery, Accessories)..."
+              placeholder={t('searchPlaceholder')}
               className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-950 border border-slate-700/80 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
             />
             {searchQuery && (
@@ -123,7 +133,7 @@ export const ShopPage: React.FC = () => {
                 type="button"
                 onClick={() => setSearchQuery('')}
                 className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-white rounded-md hover:bg-slate-800 transition-colors"
-                title="Clear search"
+                title={lang === 'bn' ? 'অনুসন্ধান মুছুন' : 'Clear search'}
                 aria-label="Clear search query"
               >
                 <X className="w-4 h-4" />
@@ -131,7 +141,7 @@ export const ShopPage: React.FC = () => {
             )}
           </div>
 
-          {/* Category Dropdown (Compact for mobile / quick select) */}
+          {/* Category Dropdown */}
           <div className="flex items-center gap-3 shrink-0">
             <div className="relative">
               <select
@@ -142,7 +152,7 @@ export const ShopPage: React.FC = () => {
               >
                 {categories.map((cat) => (
                   <option key={cat} value={cat}>
-                    Category: {cat} ({categoryCounts[cat] || 0})
+                    {t('category')}: {getLocalizedCategory(cat, lang)} ({categoryCounts[cat] || 0})
                   </option>
                 ))}
               </select>
@@ -157,9 +167,9 @@ export const ShopPage: React.FC = () => {
                 onChange={(e) => setSortBy(e.target.value as any)}
                 className="bg-slate-950 border border-slate-700/80 text-xs font-medium text-slate-200 rounded-xl px-3.5 py-3 focus:outline-none focus:border-blue-500"
               >
-                <option value="featured">Featured</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
+                <option value="featured">{t('featured')}</option>
+                <option value="price-asc">{t('priceLowHigh')}</option>
+                <option value="price-desc">{t('priceHighLow')}</option>
               </select>
             </div>
           </div>
@@ -181,7 +191,7 @@ export const ShopPage: React.FC = () => {
                     : 'bg-slate-950 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
                 }`}
               >
-                <span>{cat}</span>
+                <span>{getLocalizedCategory(cat, lang)}</span>
                 <span
                   className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
                     isSelected ? 'bg-blue-700 text-blue-100' : 'bg-slate-900 text-slate-500'
@@ -198,15 +208,16 @@ export const ShopPage: React.FC = () => {
         <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800 text-xs text-slate-400">
           <div className="flex items-center gap-2">
             <span>
-              Showing <strong className="text-white font-mono">{filteredProducts.length}</strong> of{' '}
-              <span className="text-slate-300 font-mono">{activeDemoCount}</span> products
+              {t('showing')} <strong className="text-white font-mono">{filteredProducts.length}</strong> {t('of')}{' '}
+              <span className="text-slate-300 font-mono">{activeCount}</span> {t('products')}
             </span>
 
             {searchQuery && (
               <>
                 <span aria-hidden="true" className="text-slate-600">·</span>
                 <span className="text-slate-300">
-                  matching "<strong className="text-blue-400">{searchQuery}</strong>"
+                  {lang === 'bn' ? 'অনুসন্ধান: ' : 'matching '}
+                  "<strong className="text-blue-400">{searchQuery}</strong>"
                 </span>
               </>
             )}
@@ -215,7 +226,8 @@ export const ShopPage: React.FC = () => {
               <>
                 <span aria-hidden="true" className="text-slate-600">·</span>
                 <span className="text-slate-300">
-                  in category "<strong className="text-blue-400">{selectedCategory}</strong>"
+                  {lang === 'bn' ? 'ক্যাটাগরি: ' : 'in category '}
+                  "<strong className="text-blue-400">{getLocalizedCategory(selectedCategory, lang)}</strong>"
                 </span>
               </>
             )}
@@ -227,13 +239,13 @@ export const ShopPage: React.FC = () => {
               onClick={clearAllFilters}
               className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors"
             >
-              Reset All Filters
+              {t('resetFilters')}
             </button>
           )}
         </div>
       </div>
 
-      {/* Products Grid */}
+      {/* Product Catalog Grid */}
       {filteredProducts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {filteredProducts.map((product) => (
@@ -241,19 +253,18 @@ export const ShopPage: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="text-center py-16 p-8 rounded-2xl border border-slate-800 bg-slate-900/40 space-y-4">
-          <ShoppingBag className="w-10 h-10 text-slate-600 mx-auto" />
-          <h3 className="text-base font-semibold text-white">No products found</h3>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            No demonstration products matched your real-time search for "{searchQuery}" in{' '}
-            {selectedCategory === 'All' ? 'any category' : `the "${selectedCategory}" category`}.
+        <div className="p-12 text-center rounded-2xl border border-slate-800 bg-slate-900/40 space-y-3">
+          <p className="text-slate-300 text-sm">
+            {lang === 'bn'
+              ? 'আপনার অনুসন্ধানের সাথে মেলে এমন কোনো প্রোডাক্ট পাওয়া যায়নি।'
+              : 'No products found matching your active filter criteria.'}
           </p>
           <button
             type="button"
             onClick={clearAllFilters}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-500 transition-colors"
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold"
           >
-            Clear Search & Reset Filters
+            {t('resetFilters')}
           </button>
         </div>
       )}
